@@ -4,6 +4,7 @@ import { useStore } from '../store/useStore';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { ArrowLeft } from 'lucide-react';
+import { BottomActionBar } from '../components/layout/BottomActionBar';
 
 export const AddCustomer = () => {
   const navigate = useNavigate();
@@ -71,11 +72,11 @@ export const AddCustomer = () => {
           />
         </div>
 
-        <div className="pt-6">
-          <Button type="submit" className="w-full" disabled={!formData.name || !formData.phone}>
+        <BottomActionBar>
+          <Button type="submit" className="w-full text-base font-bold h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-sm" disabled={!formData.name || !formData.phone}>
             Save Customer
           </Button>
-        </div>
+        </BottomActionBar>
       </form>
     </div>
   );

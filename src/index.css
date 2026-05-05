@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+@layer base {
+  :root {
+    --bottom-nav-height: 76px;
+    --bottom-action-height: 72px;
+  }
+}
+
 @layer utilities {
   .no-scrollbar::-webkit-scrollbar {
     display: none;

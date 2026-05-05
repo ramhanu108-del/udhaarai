@@ -5,6 +5,7 @@ import { ArrowLeft, Check, Package, DollarSign, AlertCircle } from 'lucide-react
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { InventoryUnit } from '../types';
+import { BottomActionBar } from '../components/layout/BottomActionBar';
 
 export const AddInventoryItem = () => {
   const navigate = useNavigate();
@@ -209,13 +210,12 @@ export const AddInventoryItem = () => {
 
       </div>
 
-      {/* Floating Action Button */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-slate-100 sm:max-w-md sm:mx-auto">
+      <BottomActionBar>
         <Button onClick={handleSave} className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-[0_8px_30px_rgb(79,70,229,0.2)] font-bold text-sm tracking-wide flex items-center justify-center gap-2">
            <Check className="w-5 h-5" />
            SAVE ITEM
         </Button>
-      </div>
+      </BottomActionBar>
     </div>
   );
 };

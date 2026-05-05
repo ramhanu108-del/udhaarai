@@ -6,6 +6,7 @@ import { PaymentMode, InventoryItem } from '../types';
 import { ArrowLeft, CheckCircle, Package } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { BottomActionBar } from '../components/layout/BottomActionBar';
 
 export const AddSale = () => {
   const navigate = useNavigate();
@@ -383,14 +384,14 @@ export const AddSale = () => {
           )}
         </div>
 
-        <div className="pt-2">
+        <BottomActionBar>
           <Button 
             type="submit" 
             className="w-full text-sm uppercase tracking-widest font-bold h-14 shadow-sm active:scale-95 transition-transform bg-slate-900 hover:bg-slate-800 text-white" 
           >
             Save Sale
           </Button>
-        </div>
+        </BottomActionBar>
       </form>
     </div>
   );

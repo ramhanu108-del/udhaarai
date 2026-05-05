@@ -4,6 +4,7 @@ import { useStore } from '../store/useStore';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { ArrowLeft } from 'lucide-react';
+import { BottomActionBar } from '../components/layout/BottomActionBar';
 
 export const AddTransaction = () => {
   const navigate = useNavigate();
@@ -151,14 +152,14 @@ export const AddTransaction = () => {
            </div>
         )}
 
-        <div className="pt-4">
+        <BottomActionBar>
           <Button 
             type="submit" 
             className={`w-full text-sm uppercase tracking-widest font-bold h-14 shadow-sm active:scale-95 transition-transform ${isUdhaar ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`} 
           >
             {isUdhaar ? 'Save Udhaar' : 'Save Payment'}
           </Button>
-        </div>
+        </BottomActionBar>
       </form>
     </div>
   );

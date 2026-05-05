@@ -6,6 +6,7 @@ import { generateInvoiceNumber } from '../store/selectors';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { BottomActionBar } from '../components/layout/BottomActionBar';
 
 export const AddInvoice = () => {
   const navigate = useNavigate();
@@ -367,14 +368,14 @@ export const AddInvoice = () => {
           </div>
         </div>
 
-        <div className="pt-2">
+        <BottomActionBar>
           <Button 
             type="submit" 
             className="w-full text-sm uppercase tracking-widest font-bold h-14 shadow-sm active:scale-95 transition-transform bg-slate-900 hover:bg-slate-800 text-white" 
           >
             Generate Bill
           </Button>
-        </div>
+        </BottomActionBar>
       </form>
     </div>
   );
