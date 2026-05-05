@@ -21,6 +21,9 @@
   .pt-safe {
     padding-top: env(safe-area-inset-top);
   }
+  .pb-safe-or-4 {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
   .h-screen-safe {
     height: 100vh; /* Fallback */
     height: 100dvh;

@@ -178,8 +178,8 @@ export const AddInvoice = () => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white">
-      <div className="flex items-center space-x-4 px-6 pt-6 pb-4 border-b border-slate-100">
+    <div className="flex flex-col flex-1 w-full bg-white">
+      <div className="flex items-center space-x-4 px-6 pt-6 pb-4 border-b border-slate-100 sticky top-0 z-10 bg-white">
         <button onClick={() => navigate(-1)} className="text-slate-600 hover:bg-slate-50 p-2 rounded-full -ml-2 transition-colors">
           <ArrowLeft className="w-5 h-5" />
         </button>
@@ -188,8 +188,9 @@ export const AddInvoice = () => {
         </h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
-        {errorText && (
+      <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
+        <div className="px-6 py-6 space-y-5 flex-1">
+          {errorText && (
           <div className="bg-red-50 text-red-600 border border-red-200 text-xs font-bold p-3 rounded-lg mb-2">
             {errorText}
           </div>
@@ -366,6 +367,7 @@ export const AddInvoice = () => {
              <span className="text-sm font-bold text-slate-900 uppercase tracking-widest">Total</span>
              <span className="text-xl font-bold text-slate-900">₹{total.toFixed(2)}</span>
           </div>
+        </div>
         </div>
 
         <BottomActionBar>

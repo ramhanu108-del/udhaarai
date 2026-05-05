@@ -27,7 +27,7 @@ export const AddCustomer = () => {
   };
 
   return (
-    <div className="h-full bg-white flex flex-col">
+    <div className="flex-1 w-full bg-white flex flex-col">
       <div className="flex items-center space-x-4 px-6 pt-12 pb-4 border-b border-gray-100">
         <button onClick={() => navigate(-1)} className="text-gray-600 hover:bg-gray-100 p-2 rounded-full -ml-2">
           <ArrowLeft className="w-6 h-6" />
@@ -35,9 +35,10 @@ export const AddCustomer = () => {
         <h1 className="text-2xl font-bold text-gray-900">Add Customer</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
-        <div>
-          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Customer Name *</label>
+      <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
+        <div className="p-6 space-y-6 flex-1">
+          <div>
+            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Customer Name *</label>
           <Input 
             required 
             placeholder="e.g. Suresh Kumar"
@@ -70,6 +71,7 @@ export const AddCustomer = () => {
             value={formData.notes}
             onChange={e => setFormData(p => ({...p, notes: e.target.value}))}
           />
+        </div>
         </div>
 
         <BottomActionBar>

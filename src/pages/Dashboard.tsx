@@ -39,7 +39,7 @@ export const Dashboard = () => {
   const mainSuggestion = suggestions[0];
     
   return (
-    <div className="min-h-full pb-6 bg-white">
+    <div className="flex-1 w-full pb-6 bg-white">
       {/* Header */}
       <div className="px-6 pt-6 pb-4 flex justify-between items-center bg-white">
         <div>
