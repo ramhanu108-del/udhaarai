@@ -98,8 +98,8 @@ export const Inventory = () => {
           {filteredItems.length === 0 ? (
             <div className="text-center py-10 bg-white rounded-2xl border border-slate-200 border-dashed">
               <Package className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-              <p className="text-sm font-medium text-slate-600">No items found</p>
-              <p className="text-xs text-slate-400 mt-1">Tap + to add your first item.</p>
+              <p className="text-sm font-medium text-slate-700">Stock item add karke inventory manage shuru karein</p>
+              <p className="text-xs text-slate-500 mt-1">Upar '+' dabakar pehla item add karein</p>
             </div>
           ) : (
             filteredItems.map(item => {

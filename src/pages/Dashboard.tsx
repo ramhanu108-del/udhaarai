@@ -10,7 +10,8 @@ import { startOfDay, endOfDay } from 'date-fns';
 
 export const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, customers, transactions } = useStore();
+  const state = useStore();
+  const { user, customers, transactions } = state;
 
   const lang = user?.language || 'hinglish';
   
@@ -37,6 +38,8 @@ export const Dashboard = () => {
 
   const suggestions = getSmartSuggestions(useStore.getState());
   const mainSuggestion = suggestions[0];
+
+  const needsBackup = (!state.lastBackupAt || ((now.getTime() - state.lastBackupAt) > 7 * 24 * 60 * 60 * 1000)) && (!state.dismissedBackupReminderAt || ((now.getTime() - state.dismissedBackupReminderAt) > 24 * 60 * 60 * 1000));
     
   return (
     <div className="flex-1 w-full pb-6 bg-white">
@@ -52,7 +55,20 @@ export const Dashboard = () => {
       </div>
 
       {/* Main Metrics */}
-      <div className="px-6 py-2">
+      <div className="px-6 py-2 pb-4">
+        {needsBackup && (
+           <div className="bg-orange-50 border border-orange-200 p-3 rounded-xl mb-4 flex flex-col gap-2 shadow-sm">
+             <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-orange-600 shrink-0 mt-0.5" />
+                <p className="text-xs text-orange-900 font-medium">Backup banaye hue 7 din se zyada ho gaye. Apna hisaab safe rakhne ke liye backup download kar lein.</p>
+             </div>
+             <div className="flex gap-2 justify-end mt-1">
+                <button onClick={() => state.setDismissedBackupReminderAt(Date.now())} className="text-xs font-bold text-orange-600 px-3 py-1.5 hover:bg-orange-100 rounded-md transition-colors">Remind later</button>
+                <button onClick={() => navigate('/backup')} className="text-xs font-bold text-white bg-orange-600 hover:bg-orange-700 px-3 py-1.5 rounded-md transition-colors shadow-sm">Backup Download</button>
+             </div>
+           </div>
+        )}
+
         <div className="bg-indigo-600 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden">
           <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full"></div>
           <p className="text-indigo-100 text-xs font-medium uppercase tracking-widest mb-1">{t('total_pending', lang)}</p>

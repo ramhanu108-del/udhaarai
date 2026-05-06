@@ -182,7 +182,8 @@ export const Sales = () => {
          {filteredSales.length === 0 ? (
             <div className="text-center py-12 text-slate-400 flex flex-col items-center">
               <NotebookText className="w-12 h-12 mb-3 stroke-1 text-slate-300" />
-              <p className="text-sm">No sales found for this period filter.</p>
+              <p className="text-sm font-medium text-slate-700">Aaj koi sale nahi hui</p>
+              <p className="text-xs text-slate-500 mt-1">Nayi sale add karne ke liye upar '+' dabayein</p>
             </div>
          ) : (
             <div className="space-y-3">

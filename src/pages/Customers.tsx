@@ -47,7 +47,8 @@ export const Customers = () => {
              <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center mx-auto mb-4">
                <User className="w-8 h-8 text-slate-300" />
              </div>
-             <p className="text-sm">No customers found</p>
+             <p className="text-sm font-medium text-slate-700">Abhi koi customer nahi hai</p>
+             <p className="text-xs text-slate-500 mt-1">Upar '+' dabakar pehla customer add karein</p>
           </div>
         ) : (
           filteredCustomers.map(customer => (

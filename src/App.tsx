@@ -25,6 +25,10 @@ import { NotFound } from './pages/NotFound';
 import { AppShell } from './components/layout/AppShell';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useStore } from './store/useStore';
+import { Help } from './pages/Help';
+import { Reports } from './pages/Reports';
+import { Privacy } from './pages/Privacy';
+import { Settings } from './pages/Settings';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -74,6 +78,10 @@ export default function App() {
             <Route path="/more" element={<ProtectedRoute><More /></ProtectedRoute>} />
             <Route path="/backup" element={<ProtectedRoute><Backup /></ProtectedRoute>} />
             <Route path="/audit" element={<ProtectedRoute><AuditReport /></ProtectedRoute>} />
+            <Route path="/help" element={<ProtectedRoute><Help /></ProtectedRoute>} />
+            <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+            <Route path="/privacy" element={<ProtectedRoute><Privacy /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
 
             {/* 404 Route */}
             <Route path="*" element={<NotFound />} />

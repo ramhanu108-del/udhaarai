@@ -32,7 +32,9 @@ export const AIAssistant = () => {
     {
       id: '1',
       role: 'assistant',
-      text: "Namaste! Main aapka AI Business Assistant hoon. Apna sawaal poochho ya neeche diye questions try karein."
+      text: (state.customers.length === 0 && (!state.sales || state.sales.length === 0))
+        ? "Namaste! Main aapka AI Business Assistant hoon. Pehle kuch sales/customer data add karein, phir main useful summary dunga."
+        : "Namaste! Main aapka AI Business Assistant hoon. Apna sawaal poochho ya neeche diye questions try karein."
     }
   ]);
   const [inputText, setInputText] = useState('');

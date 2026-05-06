@@ -11,7 +11,7 @@ import {
   exportInventoryCSV,
   exportStockMovementsCSV
 } from '../utils/export';
-import { ArrowLeft, Download, Upload, CheckCircle, AlertTriangle, FileText } from 'lucide-react';
+import { ArrowLeft, Download, Upload, CheckCircle, AlertTriangle, FileText, Info } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { format } from 'date-fns';
 
@@ -26,7 +26,7 @@ export const Backup = () => {
   const handleExportFull = () => {
     exportFullBackup(state);
     state.updateBackupMeta({ lastBackupAt: Date.now() });
-    alert('Complete backup downloaded successfully.');
+    alert('Backup downloaded.\n\nIs file ko safe jagah save/share kar lein.');
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -147,6 +147,20 @@ export const Backup = () => {
           <h2 className="text-xs font-bold text-slate-900 uppercase tracking-widest mb-1">Full Backup JSON</h2>
           <p className="text-[10px] text-slate-500 mb-4">Isse aapka complete hisaab safe rahega aur dusre phone mein restore ho payega.</p>
           
+          <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 mb-4 flex gap-3">
+             <div className="mt-0.5 shrink-0">
+                <Info className="w-4 h-4 text-blue-600" />
+             </div>
+             <div>
+                <p className="text-[13px] text-blue-900 leading-snug font-medium mb-1.5">
+                   Backup file ko Google Drive, WhatsApp ya phone storage mein safe rakhein. Agar phone data clear ho jaye, isi file se aapka hisaab restore ho sakta hai.
+                </p>
+                <p className="text-[11px] text-blue-700/80 font-medium leading-snug">
+                   Your backup includes customers, udhaar, sales, invoices, inventory, and settings.
+                </p>
+             </div>
+          </div>
+
           <div className="space-y-4">
              <Button onClick={handleExportFull} className="w-full bg-indigo-600 hover:bg-indigo-700 text-xs font-bold uppercase tracking-widest text-white h-12 flex items-center justify-center gap-2">
                 <Download className="w-4 h-4" />

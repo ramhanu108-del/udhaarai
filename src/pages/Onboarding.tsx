@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Store, Scissors, Wrench, Shirt, BookOpen, Truck, MoreHorizontal } from 'lucide-react';
+import { Store, Scissors, Wrench, Shirt, BookOpen, Truck, MoreHorizontal, Package, Cloud, Check } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -75,7 +75,7 @@ export const Onboarding = () => {
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-4 tracking-tight">SmartUdhaar AI</h1>
             <p className="text-lg text-gray-600 mb-12">
-              Apna business smart banao.<br/>Udhaar, sales aur payments ek jagah.
+              Apna udhaar, sales aur stock ek jagah manage karo.
             </p>
             <Button className="w-full" size="lg" onClick={handleNext}>
               Start Now
@@ -91,33 +91,57 @@ export const Onboarding = () => {
             exit={{ opacity: 0, x: -20 }}
             className="flex flex-col h-full p-6 pt-12"
           >
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Aapka business kaisa hai?</h2>
-            <div className="grid grid-cols-2 gap-4 mb-auto">
-              {businessTypes.map((type) => {
-                const Icon = type.icon;
-                const isSelected = formData.businessType === type.id;
-                return (
-                  <button
-                    key={type.id}
-                    onClick={() => updateForm('businessType', type.id)}
-                    className={cn(
-                      "flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all",
-                      isSelected
-                        ? "border-indigo-600 bg-indigo-50 text-indigo-700"
-                        : "border-gray-100 bg-white hover:border-gray-200 text-gray-600"
-                    )}
-                  >
-                    <Icon className="mb-3 w-8 h-8" />
-                    <span className="font-medium text-sm">{type.label}</span>
-                  </button>
-                );
-              })}
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Shop details</h2>
+            <p className="text-gray-500 mb-8">Enter your basic information</p>
+
+            <div className="space-y-4 mb-auto">
+              <div>
+                 <label className="text-sm font-medium text-gray-700 mb-1 block">Your Name *</label>
+                 <Input 
+                   placeholder="e.g. Ramesh Sharma" 
+                   value={formData.name}
+                   onChange={(e) => updateForm('name', e.target.value)}
+                 />
+              </div>
+              <div>
+                 <label className="text-sm font-medium text-gray-700 mb-1 block">Shop Name *</label>
+                 <Input 
+                   placeholder="e.g. Sharma Kirana Store" 
+                   value={formData.businessName}
+                   onChange={(e) => updateForm('businessName', e.target.value)}
+                 />
+              </div>
+              <div>
+                 <label className="text-sm font-medium text-gray-700 mb-1 block">Business Type</label>
+                 <select 
+                   value={formData.businessType} 
+                   onChange={(e) => updateForm('businessType', e.target.value as BusinessType)}
+                   className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                 >
+                   {businessTypes.map(type => <option key={type.id} value={type.id}>{type.label}</option>)}
+                 </select>
+              </div>
+              <div>
+                 <label className="text-sm font-medium text-gray-700 mb-1 block">App Language</label>
+                 <select 
+                   value={formData.language} 
+                   onChange={(e) => updateForm('language', e.target.value as Language)}
+                   className="w-full h-10 px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                 >
+                   {languages.map(lang => <option key={lang.id} value={lang.id}>{lang.label}</option>)}
+                 </select>
+              </div>
             </div>
+
             <div className="flex space-x-3 mt-6">
               <Button variant="outline" className="w-16" onClick={handleBack}>
                 Back
               </Button>
-              <Button className="flex-1" onClick={handleNext}>
+              <Button 
+                className="flex-1" 
+                onClick={handleNext}
+                disabled={!formData.name || !formData.businessName}
+              >
                 Continue
               </Button>
             </div>
@@ -132,34 +156,24 @@ export const Onboarding = () => {
             exit={{ opacity: 0, x: -20 }}
             className="flex flex-col h-full p-6 pt-12"
           >
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Shop details</h2>
-            <p className="text-gray-500 mb-8">Enter your basic information</p>
-
-            <div className="space-y-5 mb-auto">
-              <div>
-                 <label className="text-sm font-medium text-gray-700 mb-1.5 block">Your Name</label>
-                 <Input 
-                   placeholder="e.g. Ramesh Sharma" 
-                   value={formData.name}
-                   onChange={(e) => updateForm('name', e.target.value)}
-                 />
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">App Features</h2>
+            
+            <div className="grid grid-cols-2 gap-4 mb-auto">
+              <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 flex flex-col items-center text-center">
+                 <Store className="w-6 h-6 text-indigo-600 mb-2" />
+                 <span className="font-bold text-sm text-indigo-900">Udhaar Track Karo</span>
               </div>
-              <div>
-                 <label className="text-sm font-medium text-gray-700 mb-1.5 block">Mobile Number</label>
-                 <Input 
-                   type="tel"
-                   placeholder="e.g. 9876543210" 
-                   value={formData.phone}
-                   onChange={(e) => updateForm('phone', e.target.value)}
-                 />
+              <div className="bg-emerald-50 p-4 rounded-xl border border-emerald-100 flex flex-col items-center text-center">
+                 <span className="text-xl mb-2">💰</span>
+                 <span className="font-bold text-sm text-emerald-900">Sales Add Karo</span>
               </div>
-              <div>
-                 <label className="text-sm font-medium text-gray-700 mb-1.5 block">Shop/Business Name</label>
-                 <Input 
-                   placeholder="e.g. Sharma Kirana Store" 
-                   value={formData.businessName}
-                   onChange={(e) => updateForm('businessName', e.target.value)}
-                 />
+              <div className="bg-orange-50 p-4 rounded-xl border border-orange-100 flex flex-col items-center text-center">
+                 <Package className="w-6 h-6 text-orange-600 mb-2" />
+                 <span className="font-bold text-sm text-orange-900">Stock Manage Karo</span>
+              </div>
+              <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 flex flex-col items-center text-center">
+                 <Cloud className="w-6 h-6 text-blue-600 mb-2" />
+                 <span className="font-bold text-sm text-blue-900">Backup Safe Rakho</span>
               </div>
             </div>
 
@@ -167,11 +181,7 @@ export const Onboarding = () => {
               <Button variant="outline" className="w-16" onClick={handleBack}>
                 Back
               </Button>
-              <Button 
-                className="flex-1" 
-                onClick={handleNext}
-                disabled={!formData.name || !formData.phone || !formData.businessName}
-              >
+              <Button className="flex-1" onClick={handleNext}>
                 Continue
               </Button>
             </div>
@@ -186,42 +196,24 @@ export const Onboarding = () => {
             exit={{ opacity: 0, x: -20 }}
             className="flex flex-col h-full p-6 pt-12"
           >
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Choose App Language</h2>
-            
-            <div className="space-y-4 mb-auto">
-              {languages.map((lang) => {
-                const isSelected = formData.language === lang.id;
-                return (
-                  <button
-                    key={lang.id}
-                    onClick={() => updateForm('language', lang.id)}
-                    className={cn(
-                      "w-full flex items-center justify-between p-5 rounded-2xl border-2 transition-all",
-                      isSelected
-                        ? "border-indigo-600 bg-indigo-50 text-indigo-700"
-                        : "border-gray-100 bg-white hover:border-gray-200 text-gray-700"
-                    )}
-                  >
-                    <span className="font-semibold text-lg">{lang.label}</span>
-                    {isSelected && (
-                       <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center">
-                         <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" stroke="currentColor" strokeWidth="3">
-                           <polyline points="20 6 9 17 4 12" />
-                         </svg>
-                       </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="flex space-x-3 mt-6">
-              <Button variant="outline" className="w-16" onClick={handleBack}>
-                Back
-              </Button>
-              <Button className="flex-1" onClick={handleComplete}>
-                Complete Setup
-              </Button>
+            <div className="flex-1 flex flex-col justify-center items-center text-center space-y-6">
+              <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4">
+                <Check className="w-10 h-10" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900">All Set!</h2>
+              <p className="text-gray-500 mb-8">How would you like to start using SmartUdhaar AI?</p>
+              
+              <div className="w-full space-y-3">
+                 <Button className="w-full h-12 text-sm font-bold bg-indigo-600" onClick={handleComplete}>
+                   Start Fresh
+                 </Button>
+                 <Button variant="outline" className="w-full h-12 text-sm font-bold border-indigo-200 text-indigo-700 bg-indigo-50" onClick={() => {
+                   useStore.getState().addDemoData();
+                   handleComplete();
+                 }}>
+                   Try Demo Data
+                 </Button>
+              </div>
             </div>
           </motion.div>
         );

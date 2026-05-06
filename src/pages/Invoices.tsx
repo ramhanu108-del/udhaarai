@@ -107,7 +107,8 @@ export const Invoices = () => {
          {filteredInvoices.length === 0 ? (
             <div className="text-center py-12 text-slate-400 flex flex-col items-center">
               <FileText className="w-12 h-12 mb-3 stroke-1 text-slate-300" />
-              <p className="text-sm">No invoices found.</p>
+              <p className="text-sm font-medium text-slate-700">Abhi koi bill nahi bana</p>
+              <p className="text-xs text-slate-500 mt-1">Upar '+' dabakar naya bill banayein</p>
             </div>
          ) : (
             <div className="space-y-3">
