@@ -30,10 +30,25 @@ export const Settings = () => {
     }
   };
 
-  const handleClearDemoData = () => {
-    if(window.confirm('Are you sure you want to remove all DEMO data? Active data will not be touched.')){
-      state.clearDemoData();
-      alert('Demo data removed.');
+  const hasDemoData = state.hasDemoData ? state.hasDemoData() : false;
+
+  const handleToggleDemoData = () => {
+    if (hasDemoData) {
+      if(window.confirm('Are you sure you want to remove all DEMO data? Active data will not be touched.')){
+        try {
+          const res = state.clearDemoData();
+          alert(res.message);
+        } catch (e) {
+          alert('Error removing demo data.');
+        }
+      }
+    } else {
+      try {
+        const res = state.addDemoData();
+        alert(res.message);
+      } catch (e) {
+        alert('Error adding demo data.');
+      }
     }
   };
 
@@ -132,14 +147,16 @@ export const Settings = () => {
                  </div>
               </button>
 
-              <button onClick={handleClearDemoData} className="w-full flex items-center justify-between p-4 hover:bg-slate-50 active:bg-slate-100 transition-colors">
+              <button onClick={handleToggleDemoData} className="w-full flex items-center justify-between p-4 hover:bg-slate-50 active:bg-slate-100 transition-colors">
                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
-                       <PowerOff className="w-4 h-4 text-orange-600" />
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${hasDemoData ? 'bg-orange-100 text-orange-600' : 'bg-indigo-100 text-indigo-600'}`}>
+                       <PowerOff className="w-4 h-4" />
                     </div>
                     <div className="text-left">
-                       <p className="text-sm font-bold text-slate-900">Clear Demo Data</p>
-                       <p className="text-[10px] text-slate-500 font-medium">Sirf demo accounts delete honge</p>
+                       <p className="text-sm font-bold text-slate-900">{hasDemoData ? 'Clear Demo Data' : 'Try Demo Data'}</p>
+                       <p className="text-[10px] text-slate-500 font-medium leading-snug">
+                         {hasDemoData ? 'Ye sirf sample/demo records remove karega. Aapka real data safe rahega.' : 'Demo data se aap app ko sample customer, sale, stock aur invoice ke saath test kar sakte hain.'}
+                       </p>
                     </div>
                  </div>
               </button>

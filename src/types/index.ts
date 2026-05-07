@@ -40,6 +40,7 @@ export interface Customer {
   lastReminderAt?: number;
   riskStatus: RiskStatus;
   createdAt: number;
+  isDemo?: boolean;
 }
 
 export interface Transaction {
@@ -55,6 +56,7 @@ export interface Transaction {
   linkedSaleId?: string;
   createdAt: number;
   updatedAt: number;
+  isDemo?: boolean;
 }
 
 export interface SaleItem {
@@ -85,6 +87,7 @@ export interface Sale {
   status: TransactionStatus;
   createdAt: number;
   updatedAt: number;
+  isDemo?: boolean;
 }
 
 export interface InvoiceItem {
@@ -113,6 +116,7 @@ export interface Invoice {
   createdAt: number;
   updatedAt: number;
   dueDate?: number;
+  isDemo?: boolean;
 }
 
 export interface InventoryItem {
@@ -131,6 +135,7 @@ export interface InventoryItem {
   status: 'active' | 'archived';
   createdAt: number;
   updatedAt: number;
+  isDemo?: boolean;
 }
 
 export interface StockMovement {
@@ -141,4 +146,5 @@ export interface StockMovement {
   reason?: string;
   linkedSaleId?: string;
   createdAt: number;
+  isDemo?: boolean;
 }

@@ -207,12 +207,21 @@ export const Onboarding = () => {
                  <Button className="w-full h-12 text-sm font-bold bg-indigo-600" onClick={handleComplete}>
                    Start Fresh
                  </Button>
-                 <Button variant="outline" className="w-full h-12 text-sm font-bold border-indigo-200 text-indigo-700 bg-indigo-50" onClick={() => {
-                   useStore.getState().addDemoData();
-                   handleComplete();
-                 }}>
-                   Try Demo Data
-                 </Button>
+                 <div className="space-y-2 pt-2">
+                   <Button variant="outline" className="w-full h-12 text-sm font-bold border-indigo-200 text-indigo-700 bg-indigo-50" onClick={() => {
+                     try {
+                       useStore.getState().addDemoData();
+                     } catch (e) {
+                       alert("Demo data add nahi ho paya. Aap Start Fresh use kar sakte hain.");
+                     }
+                     handleComplete();
+                   }}>
+                     Try Demo Data
+                   </Button>
+                   <p className="text-[10.5px] text-gray-500 font-medium leading-snug">
+                     Demo data se aap app ko sample customer, sale, stock aur invoice ke saath test kar sakte hain.
+                   </p>
+                 </div>
               </div>
             </div>
           </motion.div>
