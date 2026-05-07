@@ -19,6 +19,7 @@ export const Settings = () => {
 
   const [deleteInput, setDeleteInput] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [successText, setSuccessText] = useState('');
 
   const handleSave = () => {
     if (state.user) {
@@ -32,12 +33,22 @@ export const Settings = () => {
 
   const hasDemoData = state.hasDemoData ? state.hasDemoData() : false;
 
+  const isDemoRecord = (record: any) => Boolean(record?.isDemo) || Boolean(record?.id?.startsWith('demo_'));
+  const numDemoRecords = 
+    (state.customers || []).filter(isDemoRecord).length +
+    (state.transactions || []).filter(isDemoRecord).length +
+    (state.sales || []).filter(isDemoRecord).length +
+    (state.invoices || []).filter(isDemoRecord).length +
+    (state.inventory || []).filter(isDemoRecord).length +
+    (state.stockMovements || []).filter(isDemoRecord).length;
+
   const handleToggleDemoData = () => {
     if (hasDemoData) {
       if(window.confirm('Are you sure you want to remove all DEMO data? Active data will not be touched.')){
         try {
           const res = state.clearDemoData();
-          alert(res.message);
+          setSuccessText(res.message || "Demo data clear ho gaya");
+          setTimeout(() => setSuccessText(''), 3000);
         } catch (e) {
           alert('Error removing demo data.');
         }
@@ -45,7 +56,8 @@ export const Settings = () => {
     } else {
       try {
         const res = state.addDemoData();
-        alert(res.message);
+        setSuccessText(res.message || "Demo data add ho gaya");
+        setTimeout(() => setSuccessText(''), 3000);
       } catch (e) {
         alert('Error adding demo data.');
       }
@@ -147,15 +159,44 @@ export const Settings = () => {
                  </div>
               </button>
 
-              <button onClick={handleToggleDemoData} className="w-full flex items-center justify-between p-4 hover:bg-slate-50 active:bg-slate-100 transition-colors">
+              <div className="flex flex-col">
+                <button onClick={handleToggleDemoData} className="w-full flex items-center justify-between p-4 hover:bg-slate-50 active:bg-slate-100 transition-colors">
+                   <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${hasDemoData ? 'bg-orange-100 text-orange-600' : 'bg-indigo-100 text-indigo-600'}`}>
+                         <PowerOff className="w-4 h-4" />
+                      </div>
+                      <div className="text-left">
+                         <p className="text-sm font-bold text-slate-900">{hasDemoData ? 'Clear Demo Data' : 'Try Demo Data'}</p>
+                         <p className="text-[10px] text-slate-500 font-medium leading-snug">
+                           {hasDemoData ? 'Ye sirf sample/demo records remove karega. Aapka real data safe rahega.' : 'Demo data se aap app ko sample customer, sale, stock aur invoice ke saath test kar sakte hain.'}
+                         </p>
+                      </div>
+                   </div>
+                </button>
+                {(successText || numDemoRecords > 0) && (
+                   <div className="px-4 pb-3 flex flex-col gap-1">
+                     {numDemoRecords > 0 && (
+                       <p className="text-xs text-indigo-600 font-bold">Demo Records: {numDemoRecords}</p>
+                     )}
+                     {successText && (
+                       <p className="text-xs text-emerald-600 font-bold">{successText}</p>
+                     )}
+                   </div>
+                )}
+              </div>
+
+              <button onClick={() => {
+                const res = state.repairDuplicateData();
+                alert(res.message);
+              }} className="w-full flex items-center justify-between p-4 hover:bg-slate-50 active:bg-slate-100 transition-colors">
                  <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${hasDemoData ? 'bg-orange-100 text-orange-600' : 'bg-indigo-100 text-indigo-600'}`}>
-                       <PowerOff className="w-4 h-4" />
+                    <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 text-emerald-600">
+                       <ShieldAlert className="w-4 h-4" />
                     </div>
                     <div className="text-left">
-                       <p className="text-sm font-bold text-slate-900">{hasDemoData ? 'Clear Demo Data' : 'Try Demo Data'}</p>
+                       <p className="text-sm font-bold text-slate-900">Repair Duplicate Data</p>
                        <p className="text-[10px] text-slate-500 font-medium leading-snug">
-                         {hasDemoData ? 'Ye sirf sample/demo records remove karega. Aapka real data safe rahega.' : 'Demo data se aap app ko sample customer, sale, stock aur invoice ke saath test kar sakte hain.'}
+                         Agar app me duplicate records show ho rahe hain to error fix karein.
                        </p>
                     </div>
                  </div>

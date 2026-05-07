@@ -154,8 +154,8 @@ export const Dashboard = () => {
              <span onClick={() => navigate('/inventory')} className="text-xs text-indigo-600 font-semibold cursor-pointer">View inventory</span>
            </div>
            <div className="space-y-2">
-             {lowStockItems.slice(0, 3).map((item: any) => (
-               <div key={item.id} onClick={() => navigate(`/inventory/${item.id}`)} className="flex items-center justify-between p-3 bg-amber-50 rounded-xl border border-amber-100 cursor-pointer">
+             {lowStockItems.slice(0, 3).map((item: any, index: number) => (
+               <div key={`${item.id}-${index}`} onClick={() => navigate(`/inventory/${item.id}`)} className="flex items-center justify-between p-3 bg-amber-50 rounded-xl border border-amber-100 cursor-pointer">
                  <div>
                    <p className="text-sm font-bold text-amber-900">{item.name}</p>
                    <p className="text-[10px] text-amber-700">Stock left: <span className="font-bold">{item.stockQty} {item.unit}</span></p>
@@ -176,8 +176,8 @@ export const Dashboard = () => {
           <span onClick={() => navigate('/customers')} className="text-xs text-indigo-600 font-semibold cursor-pointer">View All</span>
         </div>
         <div className="space-y-3">
-          {customers.filter(c => c.totalPending !== 0).slice(0, 3).map(c => (
-            <div key={c.id} onClick={() => navigate(`/customers/${c.id}`)} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 cursor-pointer">
+          {customers.filter(c => c.totalPending !== 0).slice(0, 3).map((c, index) => (
+            <div key={`${c.id}-${index}`} onClick={() => navigate(`/customers/${c.id}`)} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 cursor-pointer">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs font-bold">{c.name.charAt(0).toUpperCase()}</div>
                 <div>

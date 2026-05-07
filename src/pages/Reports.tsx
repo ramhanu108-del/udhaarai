@@ -119,8 +119,8 @@ export const Reports = () => {
               <div className="p-6 text-center text-sm text-slate-500">Koi udhaar baki nahi hai.</div>
            ) : (
              <div className="divide-y divide-slate-100">
-               {topUdhaarCustomers.map(c => (
-                 <div key={c.id} className="p-4 flex items-center justify-between" onClick={() => navigate(`/customers/${c.id}`)}>
+               {topUdhaarCustomers.map((c, index) => (
+                 <div key={`${c.id}-${index}`} className="p-4 flex items-center justify-between" onClick={() => navigate(`/customers/${c.id}`)}>
                     <div>
                        <p className="text-sm font-bold text-slate-900">{c.name}</p>
                        <p className="text-xs text-slate-500">{c.phone}</p>

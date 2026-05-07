@@ -102,7 +102,7 @@ export const Inventory = () => {
               <p className="text-xs text-slate-500 mt-1">Upar '+' dabakar pehla item add karein</p>
             </div>
           ) : (
-            filteredItems.map(item => {
+            filteredItems.map((item, index) => {
               const isLowStock = item.stockQty <= item.lowStockAlertQty;
               const marginPaise = item.sellingPricePaise - item.purchasePricePaise;
               const marginPercent = item.purchasePricePaise > 0 
@@ -110,7 +110,7 @@ export const Inventory = () => {
                 : 100;
 
               return (
-                <div key={item.id} onClick={() => navigate(`/inventory/${item.id}`)} className="bg-white p-4 rounded-2xl border border-slate-200 hover:border-indigo-200 transition-colors cursor-pointer">
+                <div key={`${item.id}-${index}`} onClick={() => navigate(`/inventory/${item.id}`)} className="bg-white p-4 rounded-2xl border border-slate-200 hover:border-indigo-200 transition-colors cursor-pointer">
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <h3 className="font-bold text-slate-900">{item.name}</h3>

@@ -80,11 +80,11 @@ export const Udhaar = () => {
            </div>
         ) : (
            <div className="space-y-3">
-             {collectionList.map(customer => {
+             {collectionList.map((customer, index) => {
                const bal = getCustomerBalance(customer.id);
                if (bal <= 0) return null; // Defensive check
                return (
-                 <div key={customer.id} className="bg-white rounded-xl p-3 border border-slate-200">
+                 <div key={`${customer.id}-${index}`} className="bg-white rounded-xl p-3 border border-slate-200">
                    <div className="flex justify-between items-start mb-3">
                      <div className="flex items-center gap-3">
                        <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-xs">

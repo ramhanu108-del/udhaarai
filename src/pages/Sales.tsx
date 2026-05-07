@@ -187,13 +187,13 @@ export const Sales = () => {
             </div>
          ) : (
             <div className="space-y-3">
-              {filteredSales.map(sale => {
+              {filteredSales.map((sale, index) => {
                 const customer = sale.customerId ? customers.find(c => c.id === sale.customerId) : null;
                 const isUdhaar = sale.paymentMode === 'udhaar';
                 const mainItem = sale.items[0];
                 
                 return (
-                  <div key={sale.id} className={`bg-white rounded-xl p-3 border ${sale.status === 'void' ? 'border-red-200 opacity-60' : 'border-slate-200'} relative overflow-hidden`}>
+                  <div key={`${sale.id}-${index}`} className={`bg-white rounded-xl p-3 border ${sale.status === 'void' ? 'border-red-200 opacity-60' : 'border-slate-200'} relative overflow-hidden`}>
                     <div className="flex justify-between items-start">
                       <div>
                         <p className={`font-bold text-sm ${sale.status === 'void' ? 'text-red-900 line-through' : 'text-slate-900'}`}>

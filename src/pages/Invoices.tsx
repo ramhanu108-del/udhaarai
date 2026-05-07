@@ -112,12 +112,12 @@ export const Invoices = () => {
             </div>
          ) : (
             <div className="space-y-3">
-              {filteredInvoices.map(inv => {
+              {filteredInvoices.map((inv, index) => {
                 const customer = inv.customerId ? customers.find(c => c.id === inv.customerId) : null;
                 const isPaid = inv.paymentStatus === 'paid';
                 
                 return (
-                  <div key={inv.id} onClick={() => navigate(`/invoices/${inv.id}`)} className="bg-white rounded-xl p-4 border border-slate-200 relative overflow-hidden cursor-pointer hover:border-indigo-200 active:bg-slate-50 transition-all">
+                  <div key={`${inv.id}-${index}`} onClick={() => navigate(`/invoices/${inv.id}`)} className="bg-white rounded-xl p-4 border border-slate-200 relative overflow-hidden cursor-pointer hover:border-indigo-200 active:bg-slate-50 transition-all">
                     <div className="flex justify-between items-start">
                       <div>
                         <p className="font-bold text-slate-900 text-sm">

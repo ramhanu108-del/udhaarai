@@ -43,6 +43,7 @@ interface AppState {
   resetAll: () => void;
   addDemoData: () => { ok: boolean; message: string };
   clearDemoData: () => { ok: boolean; message: string };
+  repairDuplicateData: () => { ok: boolean; message: string };
   hasDemoData: () => boolean;
   setDismissedBackupReminderAt: (time: number) => void;
   dismissedBackupReminderAt?: number;
@@ -66,6 +67,16 @@ export const computeCustomerBalance = (transactions: Transaction[], customerId: 
       if (tx.type === 'payment' || tx.type === 'adjustment' || tx.type === 'refund') return sum - tx.amount;
       return sum;
     }, 0);
+};
+
+const dedupeById = <T extends { id?: string }>(arr: T[]): T[] => {
+  const map = new Map<string, T>();
+  arr.forEach(item => {
+    if (item?.id) {
+       map.set(item.id, item); // latest overrides
+    }
+  });
+  return Array.from(map.values());
 };
 
 export const useStore = create<AppState>()(
@@ -420,12 +431,16 @@ export const useStore = create<AppState>()(
         const safeSales = state.sales || [];
         const safeInvoices = state.invoices || [];
         const safeInventoryItems = state.inventory || [];
+        const safeStockMovements = state.stockMovements || [];
         
-        return safeCustomers.some((c) => Boolean(c?.isDemo)) ||
-          safeTransactions.some((t) => Boolean(t?.isDemo)) ||
-          safeSales.some((s) => Boolean(s?.isDemo)) ||
-          safeInvoices.some((i) => Boolean(i?.isDemo)) ||
-          safeInventoryItems.some((item) => Boolean(item?.isDemo));
+        const isDemoRecord = (record: any) => Boolean(record?.isDemo) || Boolean(record?.id?.startsWith('demo_'));
+
+        return safeCustomers.some(isDemoRecord) ||
+          safeTransactions.some(isDemoRecord) ||
+          safeSales.some(isDemoRecord) ||
+          safeInvoices.some(isDemoRecord) ||
+          safeInventoryItems.some(isDemoRecord) ||
+          safeStockMovements.some(isDemoRecord);
       },
 
       addDemoData: () => {
@@ -434,41 +449,49 @@ export const useStore = create<AppState>()(
         }
         
         const now = Date.now();
+        const demoBatchId = `demo_${now}`;
+        const c1Id = `${demoBatchId}_c1`;
+        const c2Id = `${demoBatchId}_c2`;
+        const c3Id = `${demoBatchId}_c3`;
+        const i1Id = `${demoBatchId}_i1`;
+        const i2Id = `${demoBatchId}_i2`;
+        const i3Id = `${demoBatchId}_i3`;
+        
         const demoCustomers: Customer[] = [
-          { id: 'demo_c1', userId: get().user?.id || 'demo_u', name: 'Ramesh Singh (Demo)', phone: '9876543210', totalPending: 250000, riskStatus: 'Medium', createdAt: now, isDemo: true },
-          { id: 'demo_c2', userId: get().user?.id || 'demo_u', name: 'Amit Kumar (Demo)', phone: '8765432109', totalPending: -50000, riskStatus: 'Low', createdAt: now, isDemo: true },
-          { id: 'demo_c3', userId: get().user?.id || 'demo_u', name: 'Suresh Patel (Demo)', phone: '7654321098', totalPending: 0, riskStatus: 'Low', createdAt: now, isDemo: true },
+          { id: c1Id, userId: get().user?.id || 'demo_u', name: 'Ramesh Singh (Demo)', phone: '9876543210', totalPending: 250000, riskStatus: 'Medium', createdAt: now, isDemo: true },
+          { id: c2Id, userId: get().user?.id || 'demo_u', name: 'Amit Kumar (Demo)', phone: '8765432109', totalPending: -50000, riskStatus: 'Low', createdAt: now, isDemo: true },
+          { id: c3Id, userId: get().user?.id || 'demo_u', name: 'Suresh Patel (Demo)', phone: '7654321098', totalPending: 0, riskStatus: 'Low', createdAt: now, isDemo: true },
         ];
         const demoTransactions: Transaction[] = [
-          { id: 'demo_t1', userId: get().user?.id || 'demo_u', customerId: 'demo_c1', type: 'udhaar', amount: 250000, description: 'Grocery items', status: 'active', createdAt: now - 86400000, updatedAt: now - 86400000, isDemo: true },
-          { id: 'demo_t2', userId: get().user?.id || 'demo_u', customerId: 'demo_c2', type: 'payment', amount: 50000, description: 'Advance payment', status: 'active', paymentMode: 'upi', createdAt: now - 40000000, updatedAt: now - 40000000, isDemo: true },
+          { id: `${demoBatchId}_t1`, userId: get().user?.id || 'demo_u', customerId: c1Id, type: 'udhaar', amount: 250000, description: 'Grocery items', status: 'active', createdAt: now - 86400000, updatedAt: now - 86400000, isDemo: true },
+          { id: `${demoBatchId}_t2`, userId: get().user?.id || 'demo_u', customerId: c2Id, type: 'payment', amount: 50000, description: 'Advance payment', status: 'active', paymentMode: 'upi', createdAt: now - 40000000, updatedAt: now - 40000000, isDemo: true },
         ];
         const demoInventory: InventoryItem[] = [
-          { id: 'demo_i1', userId: get().user?.id || 'demo_u', name: 'Sugar 1kg (Demo)', category: 'Grocery', purchasePricePaise: 4000, sellingPricePaise: 4500, stockQty: 50, lowStockAlertQty: 10, unit: 'packet', status: 'active', createdAt: now, updatedAt: now, isDemo: true },
-          { id: 'demo_i2', userId: get().user?.id || 'demo_u', name: 'Biscuits (Demo)', category: 'Snacks', purchasePricePaise: 800, sellingPricePaise: 1000, stockQty: 100, lowStockAlertQty: 20, unit: 'packet', status: 'active', createdAt: now, updatedAt: now, isDemo: true },
-          { id: 'demo_i3', userId: get().user?.id || 'demo_u', name: 'Shampoo (Demo)', category: 'Personal Care', purchasePricePaise: 15000, sellingPricePaise: 18000, stockQty: 5, lowStockAlertQty: 10, unit: 'box', status: 'active', createdAt: now, updatedAt: now, isDemo: true },
+          { id: i1Id, userId: get().user?.id || 'demo_u', name: 'Sugar 1kg (Demo)', category: 'Grocery', purchasePricePaise: 4000, sellingPricePaise: 4500, stockQty: 50, lowStockAlertQty: 10, unit: 'packet', status: 'active', createdAt: now, updatedAt: now, isDemo: true },
+          { id: i2Id, userId: get().user?.id || 'demo_u', name: 'Biscuits (Demo)', category: 'Snacks', purchasePricePaise: 800, sellingPricePaise: 1000, stockQty: 100, lowStockAlertQty: 20, unit: 'packet', status: 'active', createdAt: now, updatedAt: now, isDemo: true },
+          { id: i3Id, userId: get().user?.id || 'demo_u', name: 'Shampoo (Demo)', category: 'Personal Care', purchasePricePaise: 15000, sellingPricePaise: 18000, stockQty: 5, lowStockAlertQty: 10, unit: 'box', status: 'active', createdAt: now, updatedAt: now, isDemo: true },
         ];
         const demoStock: StockMovement[] = [
-          { id: 'demo_s1', inventoryItemId: 'demo_i1', type: 'purchase', qtyChange: 50, createdAt: now, isDemo: true },
-          { id: 'demo_s2', inventoryItemId: 'demo_i2', type: 'purchase', qtyChange: 100, createdAt: now, isDemo: true },
-          { id: 'demo_s3', inventoryItemId: 'demo_i3', type: 'purchase', qtyChange: 5, createdAt: now, isDemo: true },
+          { id: `${demoBatchId}_s1`, inventoryItemId: i1Id, type: 'purchase', qtyChange: 50, createdAt: now, isDemo: true },
+          { id: `${demoBatchId}_s2`, inventoryItemId: i2Id, type: 'purchase', qtyChange: 100, createdAt: now, isDemo: true },
+          { id: `${demoBatchId}_s3`, inventoryItemId: i3Id, type: 'purchase', qtyChange: 5, createdAt: now, isDemo: true },
         ];
         const demoSales: Sale[] = [
           { 
-            id: 'demo_sale1', userId: get().user?.id || 'demo_u', customerId: 'demo_c1', 
-            items: [{ id: 'dsi1', name: 'Sugar 1kg (Demo)', quantity: 2, unitPricePaise: 4500, lineTotalPaise: 9000, inventoryItemId: 'demo_i1' }], 
+            id: `${demoBatchId}_sale1`, userId: get().user?.id || 'demo_u', customerId: c1Id, 
+            items: [{ id: `${demoBatchId}_dsi1`, name: 'Sugar 1kg (Demo)', quantity: 2, unitPricePaise: 4500, lineTotalPaise: 9000, inventoryItemId: i1Id }], 
             subtotalPaise: 9000, discountPaise: 0, totalPaise: 9000, status: 'active', paymentMode: 'udhaar', createdAt: now, updatedAt: now, isDemo: true 
           },
           { 
-            id: 'demo_sale2', userId: get().user?.id || 'demo_u', 
-            items: [{ id: 'dsi2', name: 'Biscuits (Demo)', quantity: 10, unitPricePaise: 1000, lineTotalPaise: 10000, inventoryItemId: 'demo_i2' }], 
+            id: `${demoBatchId}_sale2`, userId: get().user?.id || 'demo_u', 
+            items: [{ id: `${demoBatchId}_dsi2`, name: 'Biscuits (Demo)', quantity: 10, unitPricePaise: 1000, lineTotalPaise: 10000, inventoryItemId: i2Id }], 
             subtotalPaise: 10000, discountPaise: 0, totalPaise: 10000, status: 'active', paymentMode: 'cash', createdAt: now, updatedAt: now, isDemo: true 
           },
         ];
         const demoInvoices: Invoice[] = [
           { 
-            id: 'demo_inv1', userId: get().user?.id || 'demo_u', invoiceNumber: 'INV-DEMO-1', customerId: 'demo_c1', 
-            items: [{ id: 'dii1', name: 'Shampoo (Demo)', quantity: 2, unitPricePaise: 18000, lineTotalPaise: 36000 }], 
+            id: `${demoBatchId}_inv1`, userId: get().user?.id || 'demo_u', invoiceNumber: 'INV-DEMO-1', customerId: c1Id, 
+            items: [{ id: `${demoBatchId}_dii1`, name: 'Shampoo (Demo)', quantity: 2, unitPricePaise: 18000, lineTotalPaise: 36000 }], 
             subtotalPaise: 36000, discountPaise: 0, totalPaise: 36000,
             status: 'active', paymentStatus: 'unpaid', paymentMode: 'cash', createdAt: now, updatedAt: now, isDemo: true 
           }
@@ -498,6 +521,22 @@ export const useStore = create<AppState>()(
           stockMovements: (state.stockMovements || []).filter(m => !m?.isDemo && !m?.id?.startsWith('demo_')),
         }));
         return { ok: true, message: 'Demo data cleared successfully.' };
+      },
+
+      repairDuplicateData: () => {
+        const state = get();
+        state.clearDemoData(); // Also clears demo data first to be safe
+        
+        set((s) => ({
+          ...s,
+          customers: dedupeById(s.customers || []),
+          transactions: dedupeById(s.transactions || []),
+          sales: dedupeById(s.sales || []),
+          invoices: dedupeById(s.invoices || []),
+          inventory: dedupeById(s.inventory || []),
+          stockMovements: dedupeById(s.stockMovements || []),
+        }));
+        return { ok: true, message: 'Duplicates cleared.' };
       },
 
       resetAll: () => set({ user: null, customers: [], transactions: [], sales: [], invoices: [], inventory: [], stockMovements: [] }),

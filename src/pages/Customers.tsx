@@ -51,9 +51,9 @@ export const Customers = () => {
              <p className="text-xs text-slate-500 mt-1">Upar '+' dabakar pehla customer add karein</p>
           </div>
         ) : (
-          filteredCustomers.map(customer => (
+          filteredCustomers.map((customer, index) => (
             <div 
-              key={customer.id} 
+              key={`${customer.id}-${index}`} 
               onClick={() => navigate(`/customers/${customer.id}`)}
               className="bg-slate-50 rounded-xl p-4 border border-slate-100 flex items-center justify-between active:bg-slate-100 cursor-pointer transition-colors"
             >

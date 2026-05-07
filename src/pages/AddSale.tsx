@@ -192,8 +192,8 @@ export const AddSale = () => {
                 className="w-full h-12 px-3 bg-indigo-50 border border-indigo-100 rounded-xl font-bold text-sm text-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-600/30"
               >
                  <option value="">Stock item choose karo...</option>
-                 {inventoryItems.map((item: InventoryItem) => (
-                    <option key={item.id} value={item.id}>
+                 {inventoryItems.map((item: InventoryItem, index) => (
+                    <option key={`${item.id}-${index}`} value={item.id}>
                        {item.name} — {item.stockQty} {item.unit} available — ₹{(item.sellingPricePaise / 100).toFixed(2)}
                     </option>
                  ))}
