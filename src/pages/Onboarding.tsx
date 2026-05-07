@@ -70,16 +70,32 @@ export const Onboarding = () => {
             exit={{ opacity: 0, x: -20 }}
             className="flex flex-col h-full items-center justify-center text-center p-6"
           >
-            <div className="w-24 h-24 bg-indigo-100 text-indigo-600 rounded-3xl flex items-center justify-center mb-8">
-              <Store size={48} strokeWidth={1.5} />
+            <div className="flex-1 flex flex-col items-center justify-center w-full">
+               <div className="w-24 h-24 bg-indigo-100 text-indigo-600 rounded-3xl flex items-center justify-center mb-8 shadow-sm">
+                 <Store size={48} strokeWidth={1.5} />
+               </div>
+               <h1 className="text-3xl font-bold text-gray-900 mb-3 tracking-tight">SmartUdhaar AI</h1>
+               <p className="text-sm font-bold text-indigo-600 mb-6 px-4">
+                 Small shops ke liye simple udhaar, sales aur stock manager.
+               </p>
+               
+               <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 text-left w-full mb-8 space-y-3">
+                 <p className="text-xs text-slate-700 font-medium flex items-start gap-2">
+                   <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                   Core features free rahenge: udhaar, sales, stock, bill aur backup.
+                 </p>
+                 <p className="text-xs text-slate-700 font-medium flex items-start gap-2">
+                   <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                   Abhi app local/offline mode mein hai. Aapka data device par save hota hai.
+                 </p>
+               </div>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-4 tracking-tight">SmartUdhaar AI</h1>
-            <p className="text-lg text-gray-600 mb-12">
-              Apna udhaar, sales aur stock ek jagah manage karo.
-            </p>
-            <Button className="w-full" size="lg" onClick={handleNext}>
-              Start Now
-            </Button>
+            
+            <div className="w-full pb-4">
+               <Button className="w-full py-6 text-base font-bold bg-indigo-600 hover:bg-indigo-700 shadow-md" onClick={handleNext}>
+                 Start Now
+               </Button>
+            </div>
           </motion.div>
         );
       case 2:

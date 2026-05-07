@@ -1,7 +1,7 @@
 import React from 'react';
 import { useStore } from '../store/useStore';
 import { useNavigate } from 'react-router-dom';
-import { Settings as SettingsIcon, HelpCircle, HardDrive, ShieldCheck, CheckSquare, FileText, Package, Sparkles, Cloud, BarChart3 } from 'lucide-react';
+import { Settings as SettingsIcon, HelpCircle, HardDrive, ShieldCheck, CheckSquare, FileText, Package, Sparkles, Cloud, BarChart3, Crown } from 'lucide-react';
 import { InstallPWA } from '../components/InstallPWA';
 
 export const More = () => {
@@ -34,7 +34,19 @@ export const More = () => {
         <InstallPWA />
 
         {/* Menu Items */}
-        <div className="bg-white shadow-sm rounded-2xl border border-slate-100 overflow-hidden">
+        <div className="bg-white shadow-sm rounded-2xl border border-slate-100 overflow-hidden mb-6">
+           <button 
+             onClick={() => navigate('/upgrade')}
+             className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-indigo-50 to-indigo-100 hover:from-indigo-100 hover:to-indigo-200 transition-colors border-b border-indigo-100"
+           >
+             <div className="flex items-center gap-3">
+               <Crown className="w-5 h-5 text-indigo-700" />
+               <span className="font-bold text-indigo-900 text-sm">Upgrade to AI Pro</span>
+             </div>
+             <span className="text-[10px] bg-amber-400 text-amber-950 font-bold uppercase tracking-widest px-2 py-0.5 rounded shadow-sm">
+               New
+             </span>
+           </button>
            <MenuItem icon={Sparkles} label="AI Business Assistant" onClick={() => navigate('/ai')} />
            <MenuItem icon={BarChart3} label="My Reports" onClick={() => navigate('/reports')} />
            <MenuItem icon={Cloud} label="Account & Sync" onClick={() => navigate('/account-sync')} />

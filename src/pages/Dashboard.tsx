@@ -44,12 +44,15 @@ export const Dashboard = () => {
   return (
     <div className="flex-1 w-full pb-6 bg-white">
       {/* Header */}
-      <div className="px-6 pt-6 pb-4 flex justify-between items-center bg-white">
+      <div className="px-6 pt-6 pb-4 flex justify-between items-start bg-white">
         <div>
-          <h2 className="text-xs text-slate-500 font-medium uppercase tracking-wider">{user?.businessName || 'Your Shop'}</h2>
-          <h1 className="text-xl font-bold text-slate-900">{t('welcome_back', lang)} {user?.name ? user.name.split(' ')[0] : 'User'}! 👋</h1>
+          <h2 className="text-xs text-slate-500 font-medium uppercase tracking-wider mb-1">{user?.businessName || 'Your Shop'}</h2>
+          <h1 className="text-xl font-bold text-slate-900 mb-0.5">{t('welcome_back', lang)} {user?.name ? user.name.split(' ')[0] : 'User'}! 👋</h1>
+          <p className="text-[10px] font-bold text-indigo-600 bg-indigo-50 inline-block px-2 py-0.5 rounded-full mt-1">
+            Small shops ke liye simple udhaar, sales aur stock manager.
+          </p>
         </div>
-        <button onClick={() => navigate('/more')} className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center border border-indigo-200">
+        <button onClick={() => navigate('/more')} className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center border border-indigo-200 mt-1 shrink-0">
           <span className="text-indigo-600 font-bold">{user?.name ? user.name.charAt(0).toUpperCase() : 'U'}</span>
         </button>
       </div>

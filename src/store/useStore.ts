@@ -20,6 +20,12 @@ interface AppState {
   lastRestoreAt?: number;
   lastExportAt?: number;
   
+  monetization: {
+    adsEnabled: false,
+    aiProEnabled: false,
+    aiProPrice: 99
+  };
+  
   // Actions
   setUser: (user: User) => void;
   addCustomer: (customer: Omit<Customer, 'id' | 'createdAt' | 'totalPending'>) => void;
@@ -96,6 +102,11 @@ export const useStore = create<AppState>()(
       lastRestoreAt: undefined,
       lastExportAt: undefined,
       dismissedBackupReminderAt: undefined,
+      monetization: {
+        adsEnabled: false,
+        aiProEnabled: false,
+        aiProPrice: 99
+      },
 
       setAuthUser: (authUser) => set({ authUser }),
       setSyncStatus: (syncStatus, lastSyncedAt) => set((state) => ({ syncStatus, lastSyncedAt: lastSyncedAt ?? state.lastSyncedAt })),

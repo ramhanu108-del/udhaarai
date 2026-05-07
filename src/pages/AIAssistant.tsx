@@ -94,9 +94,13 @@ export const AIAssistant = () => {
 
       {/* Chat Area */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-         <div className="text-center pb-2">
+         <div className="text-center pb-2 flex flex-col items-center gap-1.5">
             <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 bg-slate-100 px-3 py-1 rounded-full">
                Local AI Mode - Aapka data safe hai
+            </span>
+            <span onClick={() => navigate('/upgrade')} className="cursor-pointer text-[9px] font-bold uppercase tracking-widest text-amber-700 bg-amber-100 border border-amber-200 px-3 py-1 rounded-full flex items-center gap-1">
+               <Sparkles className="w-3 h-3" />
+               AI Pro Coming Soon - Advanced Suggestions
             </span>
          </div>
 
