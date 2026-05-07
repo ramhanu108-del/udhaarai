@@ -20,6 +20,7 @@ export const Settings = () => {
   const [deleteInput, setDeleteInput] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [successText, setSuccessText] = useState('');
+  const [showDemoClearConfirm, setShowDemoClearConfirm] = useState(false);
 
   const handleSave = () => {
     if (state.user) {
@@ -44,15 +45,7 @@ export const Settings = () => {
 
   const handleToggleDemoData = () => {
     if (hasDemoData) {
-      if(window.confirm('Are you sure you want to remove all DEMO data? Active data will not be touched.')){
-        try {
-          const res = state.clearDemoData();
-          setSuccessText(res.message || "Demo data clear ho gaya");
-          setTimeout(() => setSuccessText(''), 3000);
-        } catch (e) {
-          alert('Error removing demo data.');
-        }
-      }
+      setShowDemoClearConfirm(true);
     } else {
       try {
         const res = state.addDemoData();
@@ -61,6 +54,17 @@ export const Settings = () => {
       } catch (e) {
         alert('Error adding demo data.');
       }
+    }
+  };
+
+  const executeClearDemoData = () => {
+    try {
+      const res = state.clearDemoData();
+      setSuccessText(res.message || "Demo data clear ho gaya");
+      setTimeout(() => setSuccessText(''), 3000);
+      setShowDemoClearConfirm(false);
+    } catch (e) {
+      alert('Error removing demo data.');
     }
   };
 
@@ -241,6 +245,28 @@ export const Settings = () => {
         </section>
 
       </div>
+
+      {showDemoClearConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden p-6 space-y-4 shadow-xl">
+            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <PowerOff className="w-5 h-5 text-orange-600" />
+              Clear demo data?
+            </h3>
+            <p className="text-sm text-slate-600">
+              Ye sirf sample/demo records remove karega. Aapka real data safe rahega.
+            </p>
+            <div className="flex gap-3 pt-2">
+              <Button onClick={() => setShowDemoClearConfirm(false)} variant="outline" className="flex-1 bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100">
+                Cancel
+              </Button>
+              <Button onClick={executeClearDemoData} className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-bold">
+                Confirm Clear
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
