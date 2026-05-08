@@ -154,7 +154,7 @@ export const CustomerDetail = () => {
                    <div className="flex justify-between items-start mb-1">
                      <div>
                        <p className="font-bold text-slate-900 text-sm">
-                         {tx.type === 'sale_credit' ? 'Credit Sale' : isUdhaar ? 'Udhaar Given' : 'Payment Received'}
+                         {tx.type === 'sale_credit' ? 'Credit Sale' : tx.inventoryItemId ? 'Inventory Udhaar' : isUdhaar ? 'Udhaar Given' : 'Payment Received'}
                        </p>
                        <p className="text-[10px] text-slate-500 mt-0.5">{format(tx.createdAt, "dd MMM yyyy, hh:mm a")}</p>
                      </div>

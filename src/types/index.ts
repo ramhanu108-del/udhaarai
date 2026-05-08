@@ -54,6 +54,8 @@ export interface Transaction {
   status: TransactionStatus;
   paymentMode?: PaymentMode;
   linkedSaleId?: string;
+  inventoryItemId?: string;
+  stockReducedQty?: number;
   createdAt: number;
   updatedAt: number;
   isDemo?: boolean;

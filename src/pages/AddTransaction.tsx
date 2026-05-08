@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Package } from 'lucide-react';
 import { BottomActionBar } from '../components/layout/BottomActionBar';
 
 export const AddTransaction = () => {
   const navigate = useNavigate();
   const { customerId } = useParams();
   const [searchParams] = useSearchParams();
-  const { customers, addTransaction, user } = useStore();
+  const { customers, inventory, addTransaction, adjustStock, user } = useStore();
   
   const initialType = searchParams.get('type') || 'udhaar';
   
@@ -21,6 +21,10 @@ export const AddTransaction = () => {
     paymentMode: 'cash' as 'cash' | 'upi' | 'card',
   });
 
+  const [udhaarMode, setUdhaarMode] = useState<'manual' | 'inventory'>('manual');
+  const [selectedInventoryId, setSelectedInventoryId] = useState<string>('');
+  const [inventoryQty, setInventoryQty] = useState<string>('1');
+
   const [errorText, setErrorText] = useState('');
 
   // If customerId is provided, we strictly add to that customer.
@@ -29,6 +33,28 @@ export const AddTransaction = () => {
   const [selectedCustomer, setSelectedCustomer] = useState(initialCustomer);
 
   const isUdhaar = formData.type === 'udhaar';
+  const isInventoryMode = isUdhaar && udhaarMode === 'inventory';
+  const selectedItem = inventory.find(i => i.id === selectedInventoryId);
+
+  // Auto-calculate amount when inventory item or qty changes
+  useEffect(() => {
+    if (isInventoryMode && selectedItem) {
+      const qty = parseFloat(inventoryQty) || 0;
+      if (qty > 0) {
+        const totalAmount = (selectedItem.sellingPricePaise / 100) * qty;
+        setFormData(prev => ({
+          ...prev,
+          amount: totalAmount.toFixed(2),
+          description: `Inventory Udhaar: ${selectedItem.name} x ${qty}`
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          amount: '',
+        }));
+      }
+    }
+  }, [selectedInventoryId, inventoryQty, isInventoryMode, selectedItem]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,16 +74,44 @@ export const AddTransaction = () => {
       return;
     }
 
+    if (isInventoryMode) {
+      if (!selectedInventoryId || !selectedItem) {
+        setErrorText('Please select an inventory item.');
+        return;
+      }
+      const qty = parseFloat(inventoryQty);
+      if (isNaN(qty) || qty <= 0) {
+        setErrorText('Please enter a valid quantity greater than 0.');
+        return;
+      }
+      if (qty > selectedItem.stockQty) {
+        setErrorText('Stock available nahi hai');
+        return;
+      }
+    }
+
     const amountInPaise = Math.round(parsedAmount * 100);
     
-    addTransaction({
+    const transactionId = addTransaction({
       userId: user?.id || 'unknown',
       customerId: selectedCustomer,
       type: formData.type,
       amount: amountInPaise,
       description: formData.description || (isUdhaar ? 'Given Udhaar' : 'Received Payment'),
       paymentMode: isUdhaar ? undefined : formData.paymentMode,
+      inventoryItemId: isInventoryMode ? selectedInventoryId : undefined,
+      stockReducedQty: isInventoryMode ? parseFloat(inventoryQty) : undefined,
     });
+    
+    if (isInventoryMode && selectedInventoryId) {
+       adjustStock(
+         selectedInventoryId, 
+         -parseFloat(inventoryQty), 
+         'Inventory udhaar', 
+         'sale', 
+         transactionId
+       );
+    }
     
     navigate(-1);
   };
@@ -81,6 +135,27 @@ export const AddTransaction = () => {
           </div>
         )}
         
+        {/* Mode Switch (if Udhaar) */}
+        {isUdhaar && (
+          <div className="flex gap-2 p-1 bg-slate-100 rounded-xl mb-4">
+            <button
+              type="button"
+              onClick={() => setUdhaarMode('manual')}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${udhaarMode === 'manual' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Manual Udhaar
+            </button>
+            <button
+              type="button"
+              onClick={() => setUdhaarMode('inventory')}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 ${udhaarMode === 'inventory' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              <Package className="w-3.5 h-3.5" />
+              Inventory se Udhaar
+            </button>
+          </div>
+        )}
+
         {/* Customer Selection (if not pre-populated) */}
         {!initialCustomer && (
           <div>
@@ -99,9 +174,60 @@ export const AddTransaction = () => {
           </div>
         )}
 
+        {/* Inventory Selection */}
+        {isInventoryMode && (
+          <div className="space-y-4 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+            <div>
+              <label className="text-xs font-bold text-indigo-900 mb-1.5 block uppercase tracking-wider">Item Select Karo</label>
+              <select 
+                className="flex h-12 w-full rounded-xl border border-indigo-200 bg-white px-4 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={selectedInventoryId}
+                onChange={(e) => setSelectedInventoryId(e.target.value)}
+                required={isInventoryMode}
+              >
+                <option value="" disabled>Choose an item...</option>
+                {inventory.map(item => (
+                  <option key={item.id} value={item.id}>
+                    {item.name} (-₹{(item.sellingPricePaise / 100).toFixed(2)})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {selectedItem && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-indigo-900 mb-1.5 block uppercase tracking-wider">Available Stock</label>
+                  <div className="h-12 bg-white border border-indigo-100 rounded-xl flex items-center px-4 font-bold text-slate-700">
+                    {selectedItem.stockQty} {selectedItem.unit}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-indigo-900 mb-1.5 block uppercase tracking-wider">Quantity</label>
+                  <Input 
+                    type="number"
+                    min="1"
+                    max={selectedItem.stockQty}
+                    step="0.01"
+                    className="h-12 bg-white border-indigo-200 font-bold"
+                    value={inventoryQty}
+                    onChange={e => setInventoryQty(e.target.value)}
+                    required={isInventoryMode}
+                  />
+                </div>
+              </div>
+            )}
+            <p className="text-[10px] text-indigo-600 font-medium leading-relaxed">
+              Inventory se udhaar dene par stock auto kam hoga aur customer ke pending balance mein amount add hoga.
+            </p>
+          </div>
+        )}
+
         {/* Amount Input */}
         <div>
-           <label className="text-xs font-bold text-slate-700 mb-1.5 block uppercase tracking-wider">Amount (₹)</label>
+           <label className="text-xs font-bold text-slate-700 mb-1.5 block uppercase tracking-wider">
+             {isInventoryMode ? 'Total Udhaar (₹)' : 'Amount (₹)'}
+           </label>
            <div className="relative">
              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <span className="text-slate-500 font-bold">₹</span>
@@ -111,16 +237,17 @@ export const AddTransaction = () => {
                type="number"
                step="0.01"
                min="0.1"
-               className="pl-8 text-2xl font-bold h-14 bg-slate-50 border-slate-200"
+               className={`pl-8 text-2xl font-bold h-14 border-slate-200 ${isInventoryMode ? 'bg-slate-100 text-slate-500' : 'bg-slate-50'}`}
                placeholder="0.00"
                value={formData.amount}
                onChange={e => {setErrorText(''); setFormData(p => ({...p, amount: e.target.value}))}}
+               readOnly={isInventoryMode}
              />
            </div>
         </div>
 
         {/* Description Input */}
-        <div>
+        <div className={isInventoryMode ? 'hidden' : 'block'}>
           <label className="text-xs font-bold text-slate-700 mb-1.5 block uppercase tracking-wider">Item Details / Notes</label>
           <Input 
             className="h-12 bg-slate-50 border-slate-200 font-medium"
