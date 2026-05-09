@@ -35,8 +35,8 @@ export const AddCustomer = () => {
         <h1 className="text-2xl font-bold text-gray-900">Add Customer</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col flex-1 relative w-full">
-        <div className="p-6 pb-16 space-y-6 flex-1">
+      <form onSubmit={handleSubmit} className="flex flex-col w-full pb-32">
+        <div className="p-6 space-y-6">
           <div>
             <label className="text-sm font-medium text-gray-700 mb-1.5 block">Customer Name *</label>
           <Input 
@@ -74,11 +74,11 @@ export const AddCustomer = () => {
         </div>
         </div>
 
-        <BottomActionBar>
+        <div className="px-6 mt-4">
           <Button type="submit" className="w-full text-base font-bold h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-sm" disabled={!formData.name || !formData.phone}>
             Save Customer
           </Button>
-        </BottomActionBar>
+        </div>
       </form>
     </div>
   );

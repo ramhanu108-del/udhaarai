@@ -29,9 +29,17 @@ export default defineConfig(({mode}) => {
               purpose: 'any maskable'
             }
           ]
+        },
+        workbox: {
+          cleanupOutdatedCaches: true,
+          clientsClaim: true,
+          skipWaiting: true
         }
       })
     ],
+    build: {
+      sourcemap: false
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

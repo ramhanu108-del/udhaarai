@@ -90,7 +90,7 @@ export const AddInventoryItem = () => {
   const marginNum = sellingNum > 0 ? (profitNum / sellingNum) * 100 : 0;
 
   return (
-    <div className="flex flex-col flex-1 w-full bg-slate-50 relative">
+    <div className="flex flex-col flex-1 w-full bg-slate-50 min-h-full pb-32">
       <div className="bg-white px-6 pt-6 pb-4 border-b border-slate-100 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="text-slate-600 hover:bg-slate-50 p-2 rounded-full -ml-2 transition-colors">
@@ -103,7 +103,7 @@ export const AddInventoryItem = () => {
         </div>
       </div>
 
-      <div className="flex-1 px-6 py-6 pb-16 space-y-5">
+      <div className="px-6 py-6 space-y-5">
         {error && (
            <div className="bg-red-50 text-red-600 p-3 flex items-center gap-2 text-sm font-medium rounded-xl border border-red-100">
              <AlertCircle className="w-4 h-4 shrink-0" />
@@ -235,12 +235,12 @@ export const AddInventoryItem = () => {
 
       </div>
 
-      <BottomActionBar>
+      <div className="px-6 mt-4">
         <Button onClick={handleSave} className="w-full h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-[0_8px_30px_rgb(79,70,229,0.2)] font-bold text-sm tracking-wide flex items-center justify-center gap-2">
            <Check className="w-5 h-5" />
            SAVE ITEM
         </Button>
-      </BottomActionBar>
+      </div>
     </div>
   );
 };

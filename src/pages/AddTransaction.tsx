@@ -122,7 +122,7 @@ export const AddTransaction = () => {
   };
 
   return (
-    <div className="flex flex-col flex-1 w-full bg-white">
+    <div className="flex flex-col flex-1 w-full bg-white min-h-full">
       <div className="flex items-center space-x-4 px-6 pt-6 pb-4 border-b border-slate-100 sticky top-0 z-10 bg-white">
         <button onClick={() => navigate(-1)} className="text-slate-600 hover:bg-slate-50 p-2 rounded-full -ml-2 transition-colors">
           <ArrowLeft className="w-5 h-5" />
@@ -132,8 +132,8 @@ export const AddTransaction = () => {
         </h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex-1 flex flex-col relative w-full">
-        <div className="px-6 py-6 pb-16 space-y-5 flex-1">
+      <form onSubmit={handleSubmit} className="flex flex-col w-full pb-32">
+        <div className="px-6 py-6 space-y-5">
           {errorText && (
           <div className="bg-red-50 text-red-600 border border-red-200 text-xs font-bold p-3 rounded-lg mb-2">
             {errorText}
@@ -288,16 +288,16 @@ export const AddTransaction = () => {
              </div>
            </div>
         )}
-        </div>
+         </div>
 
-        <BottomActionBar>
+        <div className="px-6 mt-4">
           <Button 
             type="submit" 
             className={`w-full text-sm uppercase tracking-widest font-bold h-14 shadow-sm active:scale-95 transition-transform ${isUdhaar ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-emerald-600 hover:bg-emerald-700 text-white'}`} 
           >
             {isUdhaar ? 'Save Udhaar' : 'Save Payment'}
           </Button>
-        </BottomActionBar>
+        </div>
       </form>
     </div>
   );

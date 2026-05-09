@@ -51,8 +51,8 @@ export const AppShell = () => {
   const hideBottomNav = location.pathname === '/' || location.pathname === '/onboarding';
 
   return (
-    <div className="min-h-screen bg-slate-100 flex justify-center font-sans sm:p-4">
-      <div className="w-full sm:max-w-[400px] flex flex-col h-screen-safe sm:h-[750px] relative bg-white sm:rounded-[40px] sm:shadow-2xl sm:border-[8px] sm:border-slate-900 overflow-hidden">
+    <div className="h-[100dvh] bg-slate-100 flex justify-center font-sans sm:p-4 overflow-hidden">
+      <div className="w-full sm:max-w-[400px] flex flex-col h-full relative bg-white sm:rounded-[40px] sm:shadow-2xl sm:border-[8px] sm:border-slate-900 overflow-hidden">
         
         {/* Status Bar decorative (hidden on real mobile) */}
         <div className="hidden sm:flex h-6 w-full justify-between px-8 items-center pt-2 shrink-0 bg-white">
@@ -63,9 +63,9 @@ export const AppShell = () => {
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain no-scrollbar relative w-full pt-safe flex flex-col">
+        <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain no-scrollbar relative w-full flex flex-col">
            <Outlet />
-        </div>
+        </main>
         {!hideBottomNav && <BottomNav />}
       </div>
     </div>
