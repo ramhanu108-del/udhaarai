@@ -27,7 +27,7 @@ export const AddCustomer = () => {
   };
 
   return (
-    <div className="flex-1 w-full bg-white flex flex-col">
+    <div className="w-full min-h-full pb-32 bg-white">
       <div className="flex items-center space-x-4 px-6 pt-12 pb-4 border-b border-gray-100">
         <button onClick={() => navigate(-1)} className="text-gray-600 hover:bg-gray-100 p-2 rounded-full -ml-2">
           <ArrowLeft className="w-6 h-6" />
@@ -35,8 +35,8 @@ export const AddCustomer = () => {
         <h1 className="text-2xl font-bold text-gray-900">Add Customer</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col w-full pb-32">
-        <div className="p-6 space-y-6">
+      <form onSubmit={handleSubmit} className="flex flex-col w-full px-6 py-6 mt-2">
+        <div className="space-y-6">
           <div>
             <label className="text-sm font-medium text-gray-700 mb-1.5 block">Customer Name *</label>
           <Input 
@@ -74,7 +74,7 @@ export const AddCustomer = () => {
         </div>
         </div>
 
-        <div className="px-6 mt-4">
+        <div className="mt-6 pb-8">
           <Button type="submit" className="w-full text-base font-bold h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-sm" disabled={!formData.name || !formData.phone}>
             Save Customer
           </Button>

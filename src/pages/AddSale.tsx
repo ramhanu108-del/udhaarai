@@ -153,7 +153,7 @@ export const AddSale = () => {
     : null;
 
   return (
-    <div className="flex flex-col flex-1 w-full bg-white min-h-full">
+    <div className="w-full min-h-full pb-32 bg-white">
       <div className="flex items-center space-x-4 px-6 pt-6 pb-4 border-b border-slate-100 sticky top-0 z-10 bg-white">
         <button onClick={() => navigate(-1)} className="text-slate-600 hover:bg-slate-50 p-2 rounded-full -ml-2 transition-colors">
           <ArrowLeft className="w-5 h-5" />
@@ -163,8 +163,8 @@ export const AddSale = () => {
         </h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col w-full pb-32">
-        <div className="px-6 py-6 space-y-5">
+      <form onSubmit={handleSubmit} className="flex flex-col w-full px-6 py-6 mt-2">
+        <div className="space-y-5">
           {errorText && (
           <div className="bg-red-50 text-red-600 border border-red-200 text-xs font-bold p-3 rounded-lg mb-2">
             {errorText}
@@ -394,7 +394,7 @@ export const AddSale = () => {
         </div>
         </div>
 
-        <div className="px-6 mt-4">
+        <div className="mt-6 pb-8">
           <Button 
             type="submit" 
             className="w-full text-sm uppercase tracking-widest font-bold h-14 shadow-sm active:scale-95 transition-transform bg-slate-900 hover:bg-slate-800 text-white" 
