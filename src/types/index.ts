@@ -147,6 +147,7 @@ export interface StockMovement {
   qtyChange: number;
   reason?: string;
   linkedSaleId?: string;
+  linkedTransactionId?: string;
   createdAt: number;
   isDemo?: boolean;
 }

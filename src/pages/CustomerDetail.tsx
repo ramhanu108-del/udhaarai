@@ -9,10 +9,13 @@ import { format } from 'date-fns';
 export const CustomerDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { customers, user } = useStore();
+  const { customers, user, voidTransaction } = useStore();
   const [tone, setTone] = useState<ReminderTone>('polite');
   const [copied, setCopied] = useState(false);
   const [showReminderOptions, setShowReminderOptions] = useState(false);
+  const [transactionToVoid, setTransactionToVoid] = useState<{id: string, isInventoryLinked: boolean} | null>(null);
+  const [voidMessage, setVoidMessage] = useState('');
+
   
   const customer = customers.find(c => c.id === id);
   const ledger = id ? getCustomerLedger(id) : [];
@@ -40,6 +43,17 @@ export const CustomerDetail = () => {
     navigator.clipboard.writeText(generatedMessage);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleConfirmVoid = () => {
+    if (transactionToVoid) {
+      const res = voidTransaction(transactionToVoid.id);
+      setVoidMessage(res.message);
+      setTimeout(() => {
+        setVoidMessage('');
+        setTransactionToVoid(null);
+      }, 2000);
+    }
   };
 
   return (
@@ -173,9 +187,19 @@ export const CustomerDetail = () => {
                      <span className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">
                        Balance After
                      </span>
-                     <span className="text-[10px] font-bold text-slate-700">
-                       {formatCurrency(Math.abs(tx.runningBalance))} {tx.runningBalance > 0 ? '(Due)' : (tx.runningBalance < 0 ? '(Adv)' : '')}
-                     </span>
+                     <div className="flex items-center gap-3">
+                       {tx.status === 'active' && (
+                         <button 
+                           onClick={() => setTransactionToVoid({ id: tx.id, isInventoryLinked: Boolean(tx.inventoryItemId) })}
+                           className="text-[9px] uppercase font-bold text-red-500 hover:text-red-600 transition-colors"
+                         >
+                           Void
+                         </button>
+                       )}
+                       <span className="text-[10px] font-bold text-slate-700">
+                         {formatCurrency(Math.abs(tx.runningBalance))} {tx.runningBalance > 0 ? '(Due)' : (tx.runningBalance < 0 ? '(Adv)' : '')}
+                       </span>
+                     </div>
                    </div>
 
                  </div>
@@ -189,6 +213,39 @@ export const CustomerDetail = () => {
            </div>
         )}
       </div>
+      {/* Void Confirmation Modal */}
+      {transactionToVoid && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-xl animate-in fade-in zoom-in duration-200">
+            <h3 className="text-lg font-bold text-slate-900 mb-2">Void Transaction</h3>
+            <p className="text-sm text-slate-600 mb-6">
+              Is entry ko void karna hai? {transactionToVoid.isInventoryLinked && <span className="font-bold text-indigo-600 block mt-1">Agar inventory linked hai to stock restore hoga.</span>}
+            </p>
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={() => setTransactionToVoid(null)}
+                className="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleConfirmVoid}
+                className="px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors shadow-sm"
+              >
+                Confirm Void
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Toast */}
+      {voidMessage && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-max bg-slate-800 text-white px-4 py-2.5 rounded-full shadow-lg text-sm font-medium animate-in slide-in-from-bottom-5 z-50 flex items-center gap-2">
+          <Check className="w-4 h-4 text-emerald-400" />
+          {voidMessage}
+        </div>
+      )}
     </div>
   );
 };

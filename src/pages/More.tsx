@@ -60,7 +60,7 @@ export const More = () => {
         </div>
         
         <div className="text-center py-4">
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">SmartUdhaar AI v1.0.0</p>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">SmartUdhaar AI Beta v0.1.0</p>
         </div>
       </div>
     </div>

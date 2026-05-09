@@ -6,6 +6,8 @@ import { Input } from '../components/ui/input';
 import { ArrowLeft, Package } from 'lucide-react';
 import { BottomActionBar } from '../components/layout/BottomActionBar';
 
+import { validateQuantityByUnit, isDecimalAllowedForUnit } from '../utils/quantity';
+
 export const AddTransaction = () => {
   const navigate = useNavigate();
   const { customerId } = useParams();
@@ -80,10 +82,13 @@ export const AddTransaction = () => {
         return;
       }
       const qty = parseFloat(inventoryQty);
-      if (isNaN(qty) || qty <= 0) {
-        setErrorText('Please enter a valid quantity greater than 0.');
+      
+      const qtyValidation = validateQuantityByUnit(qty, selectedItem.unit);
+      if (!qtyValidation.valid) {
+        setErrorText(qtyValidation.error || 'Invalid quantity');
         return;
       }
+
       if (qty > selectedItem.stockQty) {
         setErrorText('Stock available nahi hai');
         return;
@@ -127,8 +132,8 @@ export const AddTransaction = () => {
         </h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex-1 flex flex-col relative">
-        <div className="px-6 py-6 space-y-5 flex-1">
+      <form onSubmit={handleSubmit} className="flex-1 flex flex-col relative overflow-hidden">
+        <div className="px-6 py-6 pb-32 space-y-5 flex-1 overflow-y-auto">
           {errorText && (
           <div className="bg-red-50 text-red-600 border border-red-200 text-xs font-bold p-3 rounded-lg mb-2">
             {errorText}
@@ -206,14 +211,18 @@ export const AddTransaction = () => {
                   <label className="text-xs font-bold text-indigo-900 mb-1.5 block uppercase tracking-wider">Quantity</label>
                   <Input 
                     type="number"
-                    min="1"
+                    min={isDecimalAllowedForUnit(selectedItem.unit) ? "0.001" : "1"}
                     max={selectedItem.stockQty}
-                    step="0.01"
+                    step={isDecimalAllowedForUnit(selectedItem.unit) ? "0.001" : "1"}
+                    inputMode={isDecimalAllowedForUnit(selectedItem.unit) ? "decimal" : "numeric"}
                     className="h-12 bg-white border-indigo-200 font-bold"
                     value={inventoryQty}
                     onChange={e => setInventoryQty(e.target.value)}
                     required={isInventoryMode}
                   />
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    {isDecimalAllowedForUnit(selectedItem.unit) ? 'Decimal allowed' : 'Whole number only'}
+                  </p>
                 </div>
               </div>
             )}

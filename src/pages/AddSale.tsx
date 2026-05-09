@@ -7,6 +7,7 @@ import { ArrowLeft, CheckCircle, Package } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { BottomActionBar } from '../components/layout/BottomActionBar';
+import { validateQuantityByUnit, isDecimalAllowedForUnit } from '../utils/quantity';
 
 export const AddSale = () => {
   const navigate = useNavigate();
@@ -79,6 +80,12 @@ export const AddSale = () => {
     const requiredStock = qty;
 
     if (selectedInventoryItem) {
+      const qtyValidation = validateQuantityByUnit(qty, selectedInventoryItem.unit);
+      if (!qtyValidation.valid) {
+        setErrorText(qtyValidation.error || 'Invalid quantity');
+        return;
+      }
+
       if (selectedInventoryItem.stockQty < requiredStock) {
         setErrorText(`Quantity cannot exceed available stock (${selectedInventoryItem.stockQty} ${selectedInventoryItem.unit}).`);
         return;
@@ -156,8 +163,8 @@ export const AddSale = () => {
         </h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex-1 flex flex-col">
-        <div className="px-6 py-6 space-y-5 flex-1">
+      <form onSubmit={handleSubmit} className="flex-1 flex flex-col relative overflow-hidden">
+        <div className="px-6 py-6 pb-32 space-y-5 flex-1 overflow-y-auto">
           {errorText && (
           <div className="bg-red-50 text-red-600 border border-red-200 text-xs font-bold p-3 rounded-lg mb-2">
             {errorText}
@@ -252,8 +259,9 @@ export const AddSale = () => {
             <Input 
               required 
               type="number" 
-              step="any"
-              min="0.1"
+              step={selectedItemInfo ? (isDecimalAllowedForUnit(selectedItemInfo.unit) ? "0.001" : "1") : "any"}
+              inputMode={selectedItemInfo ? (isDecimalAllowedForUnit(selectedItemInfo.unit) ? "decimal" : "numeric") : "decimal"}
+              min="0.001"
               className="h-12 bg-slate-50 border-slate-200 font-bold"
               placeholder="1"
               value={formData.quantity}
@@ -261,7 +269,7 @@ export const AddSale = () => {
             />
             {selectedItemInfo && (
               <p className="text-[10px] text-slate-500 font-semibold mt-1">
-                 Quantity = kitna bechna hai.
+                 {isDecimalAllowedForUnit(selectedItemInfo.unit) ? 'Decimal allowed' : 'Whole number only'}
               </p>
             )}
           </div>

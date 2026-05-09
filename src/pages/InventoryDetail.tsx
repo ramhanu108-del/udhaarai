@@ -4,6 +4,7 @@ import { useStore } from '../store/useStore';
 import { ArrowLeft, Check, Package, Archive, RefreshCw, AlertCircle } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
+import { validateQuantityByUnit, isDecimalAllowedForUnit } from '../utils/quantity';
 
 export const InventoryDetail = () => {
   const navigate = useNavigate();
@@ -22,7 +23,12 @@ export const InventoryDetail = () => {
 
   const handleAdjustStock = () => {
     const qty = parseFloat(adjustQty);
-    if (isNaN(qty) || qty <= 0) return;
+    
+    const qtyValidation = validateQuantityByUnit(qty, item.unit);
+    if (!qtyValidation.valid) {
+      alert(qtyValidation.error || 'Invalid quantity');
+      return;
+    }
 
     let delta = 0;
     if (adjustmentType === 'add') delta = qty;
@@ -109,12 +115,16 @@ export const InventoryDetail = () => {
                    </label>
                    <Input 
                      type="number"
-                     step="any"
+                     step={isDecimalAllowedForUnit(item.unit) ? "0.001" : "1"}
+                     inputMode={isDecimalAllowedForUnit(item.unit) ? "decimal" : "numeric"}
                      placeholder="0"
                      value={adjustQty}
                      onChange={e => setAdjustQty(e.target.value)}
                      className="bg-slate-50 border-slate-200"
                    />
+                   <p className="text-[10px] text-slate-500 font-semibold mt-1">
+                     {isDecimalAllowedForUnit(item.unit) ? 'Decimal allowed' : 'Whole number only'}
+                   </p>
                 </div>
 
                 <div>

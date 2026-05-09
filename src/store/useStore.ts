@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { User, Customer, Transaction, Sale, Invoice, InventoryItem, StockMovement, StockMovementType, SyncStatus, SyncQueueItem, SyncOperation } from '../types';
+import { sanitizeQuantityByUnit } from '../utils/quantity';
 
 interface AppState {
   user: User | null;
@@ -32,7 +33,7 @@ interface AppState {
   updateCustomer: (id: string, updates: Partial<Customer>) => void;
   addTransaction: (transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'status'> & { id?: string }) => string;
   updateTransaction: (id: string, updates: Partial<Transaction>) => void;
-  deleteTransaction: (id: string) => void;
+  voidTransaction: (id: string) => { ok: boolean, message: string };
   addSale: (sale: Omit<Sale, 'id' | 'createdAt' | 'updatedAt' | 'status'> & { id?: string }) => string;
   updateSale: (id: string, updates: Partial<Sale>) => void;
   voidSale: (id: string) => { ok: boolean, message: string };
@@ -196,8 +197,61 @@ export const useStore = create<AppState>()(
         if (get().authUser && updated) get().queueSyncAction('transactions', 'update', updated);
       },
 
-      deleteTransaction: (id) => {
-        get().updateTransaction(id, { status: 'void' });
+      voidTransaction: (id) => {
+        let result = { ok: false, message: "Transaction not found" };
+        const nowTime = Date.now();
+        const state = get();
+        
+        const tx = state.transactions.find(t => t.id === id);
+        if (!tx) return result;
+        if (tx.status === 'void') return { ok: false, message: "Transaction already voided" };
+
+        let stockMovements = state.stockMovements ? [...state.stockMovements] : [];
+        let updatedInventory = state.inventory ? [...state.inventory] : [];
+
+        // If transaction has linked inventory item, restore stock
+        if (tx.inventoryItemId && tx.stockReducedQty) {
+          const item = updatedInventory.find(i => i.id === tx.inventoryItemId);
+          if (item) {
+            updatedInventory = updatedInventory.map(i => 
+              i.id === item.id ? { ...i, stockQty: sanitizeQuantityByUnit(i.stockQty + (tx.stockReducedQty || 0), i.unit), updatedAt: nowTime } : i
+            );
+            stockMovements.push({
+              id: generateId(),
+              inventoryItemId: item.id,
+              type: 'void_restore',
+              qtyChange: tx.stockReducedQty,
+              reason: 'Inventory udhaar voided',
+              linkedTransactionId: tx.id,
+              createdAt: nowTime
+            });
+          }
+        }
+
+        const updatedTransactions = state.transactions.map((t) => 
+          t.id === id ? { ...t, status: 'void' as const, updatedAt: nowTime } : t
+        );
+        
+        const newBalance = computeCustomerBalance(updatedTransactions, tx.customerId);
+        let riskStatus: 'Low' | 'Medium' | 'High' | undefined = 'Low';
+        if (newBalance > 1000000) riskStatus = 'High';
+        else if (newBalance > 200000) riskStatus = 'Medium';
+
+        const updatedCustomers = state.customers.map((c) => 
+          c.id === tx.customerId ? { ...c, totalPending: newBalance, riskStatus } : c
+        );
+
+        set({
+          transactions: updatedTransactions,
+          customers: updatedCustomers,
+          inventory: updatedInventory,
+          stockMovements
+        });
+
+        const updatedTx = updatedTransactions.find(t => t.id === id);
+        if (state.authUser && updatedTx) get().queueSyncAction('transactions', 'update', updatedTx);
+        
+        return { ok: true, message: "Transaction voided successfully" };
       },
 
       addSale: (saleData) => {
@@ -287,7 +341,7 @@ export const useStore = create<AppState>()(
                 inv.id === item.inventoryItemId
                   ? {
                       ...inv,
-                      stockQty: Number(inv.stockQty || 0) + Number(item.stockReducedQty || 0),
+                      stockQty: sanitizeQuantityByUnit(Number(inv.stockQty || 0) + Number(item.stockReducedQty || 0), inv.unit),
                       updatedAt: nowTime,
                     }
                   : inv
@@ -383,7 +437,7 @@ export const useStore = create<AppState>()(
           if (itemIndex === -1) return state;
 
           const item = inventory[itemIndex];
-          const newStockQty = item.stockQty + deltaQty;
+          const newStockQty = sanitizeQuantityByUnit(item.stockQty + deltaQty, item.unit);
           
           if (newStockQty < 0 && type !== 'adjustment') {
              // Let UI handle negative if adjustment, but sale should fail ideally. 

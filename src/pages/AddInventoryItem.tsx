@@ -6,6 +6,7 @@ import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { InventoryUnit } from '../types';
 import { BottomActionBar } from '../components/layout/BottomActionBar';
+import { validateQuantityByUnit, isDecimalAllowedForUnit } from '../utils/quantity';
 
 export const AddInventoryItem = () => {
   const navigate = useNavigate();
@@ -52,6 +53,22 @@ export const AddInventoryItem = () => {
       return;
     }
 
+    if (stockQty > 0) {
+      const stockValidation = validateQuantityByUnit(stockQty, formData.unit);
+      if (!stockValidation.valid) {
+        setError(stockValidation.error || 'Invalid stock quantity');
+        return;
+      }
+    }
+
+    if (lowStockAlertQty > 0) {
+      const lowStockValidation = validateQuantityByUnit(lowStockAlertQty, formData.unit);
+      if (!lowStockValidation.valid) {
+        setError(lowStockValidation.error || 'Invalid low stock alert quantity');
+        return;
+      }
+    }
+
     addInventoryItem({
       userId: useStore.getState().user?.id || '',
       name: formData.name.trim(),
@@ -59,8 +76,8 @@ export const AddInventoryItem = () => {
       sku: formData.sku.trim() || undefined,
       purchasePricePaise,
       sellingPricePaise,
-      stockQty,
-      lowStockAlertQty,
+      stockQty: stockQty > 0 ? Number(stockQty.toFixed(3)) : stockQty, // it's already validated
+      lowStockAlertQty: lowStockAlertQty > 0 ? Number(lowStockAlertQty.toFixed(3)) : lowStockAlertQty,
       unit: formData.unit,
     });
 
@@ -73,7 +90,7 @@ export const AddInventoryItem = () => {
   const marginNum = sellingNum > 0 ? (profitNum / sellingNum) * 100 : 0;
 
   return (
-    <div className="flex flex-col flex-1 w-full bg-slate-50">
+      <div className="flex flex-col flex-1 w-full bg-slate-50 overflow-hidden relative">
       <div className="bg-white px-6 pt-6 pb-4 border-b border-slate-100 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="text-slate-600 hover:bg-slate-50 p-2 rounded-full -ml-2 transition-colors">
@@ -86,7 +103,7 @@ export const AddInventoryItem = () => {
         </div>
       </div>
 
-      <div className="flex-1 px-6 py-6 space-y-5">
+      <div className="flex-1 px-6 py-6 pb-32 space-y-5 overflow-y-auto">
         {error && (
            <div className="bg-red-50 text-red-600 p-3 flex items-center gap-2 text-sm font-medium rounded-xl border border-red-100">
              <AlertCircle className="w-4 h-4 shrink-0" />
@@ -168,12 +185,16 @@ export const AddInventoryItem = () => {
                  <label className="text-xs font-bold text-slate-700 mb-1.5 block uppercase tracking-wider">Opening Stock</label>
                  <Input 
                    type="number"
-                   step="any"
+                   step={isDecimalAllowedForUnit(formData.unit) ? "0.001" : "1"}
+                   inputMode={isDecimalAllowedForUnit(formData.unit) ? "decimal" : "numeric"}
                    value={formData.stockQty}
                    onChange={e => setFormData({ ...formData, stockQty: e.target.value })}
                    placeholder="0"
                    className="bg-slate-50 border-slate-200"
                  />
+                 <p className="text-[10px] text-slate-500 font-semibold mt-1">
+                   {isDecimalAllowedForUnit(formData.unit) ? 'Decimal allowed' : 'Whole number only'}
+                 </p>
               </div>
               <div>
                  <label className="text-xs font-bold text-slate-700 mb-1.5 block uppercase tracking-wider">Unit *</label>
@@ -198,12 +219,16 @@ export const AddInventoryItem = () => {
               <label className="text-xs font-bold text-slate-700 mb-1.5 block uppercase tracking-wider">Low Stock Alert at</label>
               <Input 
                 type="number"
-                step="any"
+                step={isDecimalAllowedForUnit(formData.unit) ? "0.001" : "1"}
+                inputMode={isDecimalAllowedForUnit(formData.unit) ? "decimal" : "numeric"}
                 value={formData.lowStockAlertQty}
                 onChange={e => setFormData({ ...formData, lowStockAlertQty: e.target.value })}
                 placeholder="5"
                 className="bg-slate-50 border-slate-200 w-1/2"
               />
+              <p className="text-[10px] text-slate-500 font-semibold mt-1">
+                {isDecimalAllowedForUnit(formData.unit) ? 'Decimal allowed' : 'Whole number only'}
+              </p>
               <p className="text-[10px] text-slate-400 font-medium mt-1">Jab stock itna bachega toh dashboard par alert ayega.</p>
            </div>
         </div>
