@@ -68,7 +68,7 @@ export const Udhaar = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-4">
+      <div className="flex-1 px-6 py-4 pb-24">
         <h3 className="text-xs font-bold text-slate-800 mb-4 uppercase tracking-wider flex items-center gap-1">
           <AlertCircle className="w-3.5 h-3.5 text-red-500" /> Need Attention
         </h3>

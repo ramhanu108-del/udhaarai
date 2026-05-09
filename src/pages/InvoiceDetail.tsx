@@ -69,7 +69,7 @@ export const InvoiceDetail = () => {
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-6 pb-24">
+      <div className="flex-1 px-6 py-6 pb-24">
         {/* The Invoice Document */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 print:shadow-none print:border-none print:p-0 relative overflow-hidden">
            

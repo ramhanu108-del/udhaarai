@@ -323,7 +323,7 @@ export const AuditReport = () => {
         </div>
       </div>
 
-      <div className="flex-1 px-6 py-6 overflow-y-auto">
+      <div className="flex-1 px-6 py-6 pb-24">
          <div className="bg-indigo-600 text-white p-5 rounded-2xl shadow-lg mb-6 relative overflow-hidden">
            <div className="absolute -right-10 -top-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
            <h2 className="text-lg font-bold mb-1 relative z-10">Financial Engine Test</h2>

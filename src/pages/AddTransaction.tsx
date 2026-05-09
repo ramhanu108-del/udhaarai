@@ -132,8 +132,8 @@ export const AddTransaction = () => {
         </h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex-1 flex flex-col relative overflow-hidden">
-        <div className="px-6 py-6 pb-32 space-y-5 flex-1 overflow-y-auto">
+      <form onSubmit={handleSubmit} className="flex-1 flex flex-col relative w-full">
+        <div className="px-6 py-6 pb-16 space-y-5 flex-1">
           {errorText && (
           <div className="bg-red-50 text-red-600 border border-red-200 text-xs font-bold p-3 rounded-lg mb-2">
             {errorText}

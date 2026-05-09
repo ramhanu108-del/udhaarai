@@ -57,7 +57,7 @@ export const Auth = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-8">
+      <div className="flex-1 px-6 py-8 pb-24">
          <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-5 mb-8 text-center flex flex-col items-center">
             <Cloud className="w-10 h-10 text-indigo-500 mb-3" />
             <h2 className="text-sm font-bold text-indigo-900 mb-1">Data Cloud mein safe rahega</h2>

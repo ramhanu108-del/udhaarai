@@ -149,7 +149,7 @@ export const CustomerDetail = () => {
       </div>
 
       {/* Transactions List */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
+      <div className="flex-1 px-6 py-4 pb-24">
         <h3 className="text-xs font-bold text-slate-800 mb-3 uppercase tracking-wider">Ledger History</h3>
         {displayLedger.length === 0 ? (
            <div className="text-center py-12 text-slate-400 flex flex-col items-center">

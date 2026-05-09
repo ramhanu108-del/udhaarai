@@ -69,7 +69,7 @@ export const Invoices = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto w-full px-6 py-4">
+      <div className="flex-1 w-full px-6 py-4 pb-24">
          {/* Summary Cards */}
          <div className="bg-indigo-600 rounded-2xl p-5 text-white shadow-lg mb-5">
            <p className="text-indigo-200 text-[10px] font-bold uppercase tracking-widest mb-1">

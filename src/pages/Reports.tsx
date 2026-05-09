@@ -45,7 +45,7 @@ export const Reports = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-6 pb-24 space-y-6">
+      <div className="flex-1 px-6 py-6 pb-24 space-y-6">
         
         {/* Today's Overview */}
         <div className="grid grid-cols-2 gap-4">

@@ -15,7 +15,7 @@ export const More = () => {
         <p className="text-slate-400 text-[10px] font-bold tracking-wider uppercase">Settings, Reports & Tools</p>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-6 pb-24 space-y-6">
+      <div className="flex-1 px-4 py-6 pb-24 space-y-6">
         
         {/* Profile Card */}
         <div className="bg-white shadow-sm rounded-2xl p-5 border border-slate-100 flex items-center space-x-4">

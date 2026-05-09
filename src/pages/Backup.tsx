@@ -106,7 +106,7 @@ export const Backup = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-6 pb-24 space-y-6">
+      <div className="flex-1 px-6 py-6 pb-24 space-y-6">
         
         {/* Data Safety Summary */}
         <section className="bg-white p-5 rounded-2xl border border-slate-200">

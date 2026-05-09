@@ -92,7 +92,7 @@ export const Settings = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-6 pb-32 space-y-8">
+      <div className="flex-1 px-6 py-6 pb-24 space-y-8">
         
         <section>
            <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3 px-1">Business Profile</h2>

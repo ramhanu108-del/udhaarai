@@ -93,7 +93,7 @@ export const AIAssistant = () => {
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div className="flex-1 px-4 py-4 pb-24 space-y-4">
          <div className="text-center pb-2 flex flex-col items-center gap-1.5">
             <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 bg-slate-100 px-3 py-1 rounded-full">
                Local AI Mode - Aapka data safe hai

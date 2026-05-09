@@ -17,7 +17,7 @@ export const Upgrade = () => {
    */
 
   return (
-    <div className="flex flex-col h-full bg-slate-50 overflow-y-auto pb-20">
+    <div className="flex flex-col flex-1 bg-slate-50 pb-20">
       <div className="bg-white px-6 pt-6 pb-4 border-b border-slate-100 flex items-center gap-3 sticky top-0 z-10">
         <button onClick={() => navigate(-1)} className="text-slate-600 hover:bg-slate-50 p-2 rounded-full -ml-2 transition-colors">
           <ArrowLeft className="w-5 h-5" />

@@ -129,7 +129,7 @@ export const Sales = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto w-full px-6 py-4">
+      <div className="flex-1 w-full px-6 py-4 pb-24">
          {/* Summary Cards */}
          <div className="bg-emerald-600 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden mb-5">
            <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full"></div>

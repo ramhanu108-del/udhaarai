@@ -35,8 +35,8 @@ export const AddCustomer = () => {
         <h1 className="text-2xl font-bold text-gray-900">Add Customer</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex-1 flex flex-col relative">
-        <div className="p-6 pb-32 space-y-6 flex-1 overflow-y-auto">
+      <form onSubmit={handleSubmit} className="flex flex-col flex-1 relative w-full">
+        <div className="p-6 pb-16 space-y-6 flex-1">
           <div>
             <label className="text-sm font-medium text-gray-700 mb-1.5 block">Customer Name *</label>
           <Input 

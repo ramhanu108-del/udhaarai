@@ -32,7 +32,7 @@ export const Help = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-6 pb-24 space-y-4">
+      <div className="flex-1 px-6 py-6 pb-24 space-y-4">
         <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
           <BookOpen strokeWidth={1.5} size={32} />
         </div>
