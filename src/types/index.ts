@@ -56,6 +56,8 @@ export interface Transaction {
   linkedSaleId?: string;
   inventoryItemId?: string;
   stockReducedQty?: number;
+  linkedUdhaarTransactionId?: string;
+  paymentAgainst?: string;
   createdAt: number;
   updatedAt: number;
   isDemo?: boolean;

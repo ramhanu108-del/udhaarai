@@ -168,7 +168,7 @@ export const CustomerDetail = () => {
                    <div className="flex justify-between items-start mb-1">
                      <div>
                        <p className="font-bold text-slate-900 text-sm">
-                         {tx.type === 'sale_credit' ? 'Credit Sale' : tx.inventoryItemId ? 'Inventory Udhaar' : isUdhaar ? 'Udhaar Given' : 'Payment Received'}
+                         {tx.type === 'sale_credit' ? 'Credit Sale' : (tx.type === 'udhaar' && tx.inventoryItemId) ? 'Inventory Udhaar' : (tx.type === 'payment' && tx.linkedUdhaarTransactionId) ? 'Payment Against Udhaar' : isUdhaar ? 'Udhaar Given' : 'Payment Received'}
                        </p>
                        <p className="text-[10px] text-slate-500 mt-0.5">{format(tx.createdAt, "dd MMM yyyy, hh:mm a")}</p>
                      </div>
@@ -190,7 +190,7 @@ export const CustomerDetail = () => {
                      <div className="flex items-center gap-3">
                        {tx.status === 'active' && (
                          <button 
-                           onClick={() => setTransactionToVoid({ id: tx.id, isInventoryLinked: Boolean(tx.inventoryItemId) })}
+                           onClick={() => setTransactionToVoid({ id: tx.id, isInventoryLinked: Boolean(tx.inventoryItemId && tx.type !== 'payment') })}
                            className="text-[9px] uppercase font-bold text-red-500 hover:text-red-600 transition-colors"
                          >
                            Void

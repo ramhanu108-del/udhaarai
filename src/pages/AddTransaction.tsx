@@ -12,7 +12,7 @@ export const AddTransaction = () => {
   const navigate = useNavigate();
   const { customerId } = useParams();
   const [searchParams] = useSearchParams();
-  const { customers, inventory, addTransaction, adjustStock, user } = useStore();
+  const { customers, inventory, transactions, addTransaction, adjustStock, user } = useStore();
   
   const initialType = searchParams.get('type') || 'udhaar';
   
@@ -24,6 +24,8 @@ export const AddTransaction = () => {
   });
 
   const [udhaarMode, setUdhaarMode] = useState<'manual' | 'inventory'>('manual');
+  const [paymentModeRef, setPaymentModeRef] = useState<'general' | 'udhaar'>('general');
+  const [selectedUdhaarId, setSelectedUdhaarId] = useState<string>('');
   const [selectedInventoryId, setSelectedInventoryId] = useState<string>('');
   const [inventoryQty, setInventoryQty] = useState<string>('1');
 
@@ -37,6 +39,32 @@ export const AddTransaction = () => {
   const isUdhaar = formData.type === 'udhaar';
   const isInventoryMode = isUdhaar && udhaarMode === 'inventory';
   const selectedItem = inventory.find(i => i.id === selectedInventoryId);
+
+  const pendingUdhaars = transactions
+    .filter(t => t.customerId === selectedCustomer && t.type === 'udhaar' && t.status !== 'void')
+    .map(t => {
+      const linkedPayments = transactions.filter(p => p.type === 'payment' && p.status !== 'void' && p.linkedUdhaarTransactionId === t.id);
+      const totalLinkedPayment = linkedPayments.reduce((sum, p) => sum + p.amount, 0);
+      return { ...t, pendingAmount: t.amount - totalLinkedPayment };
+    })
+    .filter(t => t.pendingAmount > 0)
+    .sort((a, b) => b.createdAt - a.createdAt);
+
+  const selectedUdhaarEntry = pendingUdhaars.find(t => t.id === selectedUdhaarId);
+
+  useEffect(() => {
+    if (!isUdhaar && paymentModeRef === 'udhaar' && selectedUdhaarId) {
+      if (selectedUdhaarEntry) {
+        setFormData(prev => ({
+          ...prev,
+          amount: (selectedUdhaarEntry.pendingAmount / 100).toFixed(2),
+          description: `Payment against: ${selectedUdhaarEntry.description || 'Udhaar'}`
+        }));
+      }
+    }
+    // Only fire off on selectedUdhaarId or mode change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedUdhaarId, paymentModeRef, isUdhaar]);
 
   // Auto-calculate amount when inventory item or qty changes
   useEffect(() => {
@@ -95,7 +123,18 @@ export const AddTransaction = () => {
       }
     }
 
+    if (!isUdhaar && paymentModeRef === 'udhaar') {
+      if (!selectedUdhaarId || !selectedUdhaarEntry) {
+        setErrorText('Please select an udhaar entry or switch to General Payment.');
+        return;
+      }
+    }
+
     const amountInPaise = Math.round(parsedAmount * 100);
+    
+    // For payment against udhaar, extract reference inventory id if it was an inventory udhaar
+    const paymentLinkedInventoryId = (!isUdhaar && paymentModeRef === 'udhaar' && selectedUdhaarEntry?.inventoryItemId) 
+                                      ? selectedUdhaarEntry.inventoryItemId : undefined;
     
     const transactionId = addTransaction({
       userId: user?.id || 'unknown',
@@ -104,8 +143,9 @@ export const AddTransaction = () => {
       amount: amountInPaise,
       description: formData.description || (isUdhaar ? 'Given Udhaar' : 'Received Payment'),
       paymentMode: isUdhaar ? undefined : formData.paymentMode,
-      inventoryItemId: isInventoryMode ? selectedInventoryId : undefined,
+      inventoryItemId: isInventoryMode ? selectedInventoryId : paymentLinkedInventoryId,
       stockReducedQty: isInventoryMode ? parseFloat(inventoryQty) : undefined,
+      linkedUdhaarTransactionId: (!isUdhaar && paymentModeRef === 'udhaar') ? selectedUdhaarId : undefined,
     });
     
     if (isInventoryMode && selectedInventoryId) {
@@ -176,6 +216,54 @@ export const AddTransaction = () => {
                  <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>
                ))}
              </select>
+          </div>
+        )}
+
+        {/* Payment Reference Selection (if Payment) */}
+        {!isUdhaar && selectedCustomer && (
+          <div className="space-y-4 bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 mt-4">
+            <label className="text-xs font-bold text-emerald-900 mb-1.5 block uppercase tracking-wider">Payment kis udhaar ke against hai? (Optional)</label>
+            <div className="flex gap-2 p-1 bg-white rounded-xl border border-emerald-200">
+              <button
+                type="button"
+                onClick={() => { setPaymentModeRef('general'); setSelectedUdhaarId(''); }}
+                className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-colors ${paymentModeRef === 'general' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                General Payment
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentModeRef('udhaar')}
+                className={`flex-1 py-2 text-[10px] font-bold rounded-lg transition-colors ${paymentModeRef === 'udhaar' ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                Udhaar Entry Select Karo
+              </button>
+            </div>
+
+            {paymentModeRef === 'udhaar' && (
+              <div>
+                <select 
+                  className="flex h-12 w-full rounded-xl border border-emerald-200 bg-white px-4 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-2"
+                  value={selectedUdhaarId}
+                  onChange={(e) => setSelectedUdhaarId(e.target.value)}
+                  required={paymentModeRef === 'udhaar'}
+                >
+                  <option value="" disabled>Select pending udhaar...</option>
+                  {pendingUdhaars.length === 0 ? (
+                    <option value="" disabled>No pending udhaar found</option>
+                  ) : (
+                    pendingUdhaars.map(tu => (
+                      <option key={tu.id} value={tu.id}>
+                        {tu.description || 'Udhaar'} — ₹{(tu.pendingAmount / 100).toFixed(2)} pending
+                      </option>
+                    ))
+                  )}
+                </select>
+                <p className="text-[10px] text-emerald-700 font-medium leading-relaxed mt-2">
+                  Payment lene par stock change nahi hota. Ye sirf kis udhaar ke against paisa aaya hai, woh track karne ke liye hai.
+                </p>
+              </div>
+            )}
           </div>
         )}
 
