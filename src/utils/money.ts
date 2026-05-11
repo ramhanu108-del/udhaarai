@@ -1,3 +1,5 @@
+import React from 'react';
+
 export interface MoneyValidationOptions {
   required?: boolean;
   allowZero?: boolean;

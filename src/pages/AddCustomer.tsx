@@ -16,12 +16,33 @@ export const AddCustomer = () => {
     notes: '',
   });
 
+  const [errorText, setErrorText] = useState('');
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorText('');
+
+    const name = formData.name.trim();
+    if (!name) {
+      setErrorText('Customer Name cannot be empty.');
+      return;
+    }
+
+    if (formData.phone) {
+       const cleanPhone = formData.phone.replace(/[\s+-]/g, '');
+       if (!/^\d{6,15}$/.test(cleanPhone)) {
+         setErrorText('Phone Number must contain 6 to 15 digits.');
+         return;
+       }
+    }
+
     addCustomer({
       userId: user?.id || 'unknown',
       riskStatus: 'Low',
-      ...formData,
+      name,
+      phone: formData.phone,
+      address: formData.address,
+      notes: formData.notes,
     });
     navigate(-1);
   };
@@ -36,6 +57,11 @@ export const AddCustomer = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col w-full px-6 py-6 mt-2">
+        {errorText && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-600 text-xs font-medium rounded-xl">
+            {errorText}
+          </div>
+        )}
         <div className="space-y-6">
           <div>
             <label className="text-sm font-medium text-gray-700 mb-1.5 block">Customer Name *</label>
@@ -47,9 +73,8 @@ export const AddCustomer = () => {
           />
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Phone Number *</label>
+          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Phone Number (Optional)</label>
           <Input 
-            required 
             type="tel"
             placeholder="e.g. 9876543210"
             value={formData.phone}
@@ -75,7 +100,7 @@ export const AddCustomer = () => {
         </div>
 
         <div className="mt-6 pb-8">
-          <Button type="submit" className="w-full text-base font-bold h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-sm" disabled={!formData.name || !formData.phone}>
+          <Button type="submit" className="w-full text-base font-bold h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl shadow-sm" disabled={!formData.name}>
             Save Customer
           </Button>
         </div>

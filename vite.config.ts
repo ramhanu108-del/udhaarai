@@ -12,7 +12,6 @@ export default defineConfig(({mode}) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        cleanupOutdatedCaches: true,
         includeAssets: ['favicon.svg'],
         manifest: {
           name: 'SmartUdhaar AI',
