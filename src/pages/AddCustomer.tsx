@@ -27,7 +27,7 @@ export const AddCustomer = () => {
   };
 
   return (
-    <div className="w-full min-h-full pb-32 bg-white">
+    <div className="w-full min-h-full pb-36 bg-white">
       <div className="flex items-center space-x-4 px-6 pt-12 pb-4 border-b border-gray-100">
         <button onClick={() => navigate(-1)} className="text-gray-600 hover:bg-gray-100 p-2 rounded-full -ml-2">
           <ArrowLeft className="w-6 h-6" />

@@ -42,7 +42,7 @@ export const Dashboard = () => {
   const needsBackup = (!state.lastBackupAt || ((now.getTime() - state.lastBackupAt) > 7 * 24 * 60 * 60 * 1000)) && (!state.dismissedBackupReminderAt || ((now.getTime() - state.dismissedBackupReminderAt) > 24 * 60 * 60 * 1000));
     
   return (
-    <div className="flex-1 w-full pb-6 bg-white">
+    <div className="w-full min-h-full pb-28 bg-white">
       {/* Header */}
       <div className="px-6 pt-6 pb-4 flex justify-between items-start bg-white">
         <div>

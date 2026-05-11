@@ -94,7 +94,7 @@ export const AccountSync = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-6 py-6 pb-32 space-y-6">
+      <div className="flex-1 overflow-y-auto no-visible-scrollbar px-6 py-6 pb-28 space-y-6">
          {/* Profile Card */}
          <div className="bg-white p-5 rounded-2xl border border-slate-100 flex items-center gap-4">
             <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600">

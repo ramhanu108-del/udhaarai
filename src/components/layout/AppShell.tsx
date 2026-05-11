@@ -63,7 +63,7 @@ export const AppShell = () => {
           </div>
         </div>
 
-        <main className="flex-1 min-h-0 overflow-y-auto overscroll-contain no-scrollbar relative w-full">
+        <main className="app-scroll no-visible-scrollbar flex-1 min-h-0 overflow-y-auto overscroll-contain relative w-full">
            <Outlet />
         </main>
         {!hideBottomNav && <BottomNav />}
