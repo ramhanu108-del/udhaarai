@@ -1,8 +1,17 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
-import { formatCurrency } from './index';
 import { AppState } from '../store/useStore';
+
+export const formatPdfCurrency = (amountInPaise: number): string => {
+  if (amountInPaise == null || isNaN(amountInPaise) || !isFinite(amountInPaise)) return "Rs. 0";
+  const rupees = amountInPaise / 100;
+  const formatted = new Intl.NumberFormat('en-IN', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(rupees);
+  return `Rs. ${formatted}`;
+};
 
 export const buildMonthlyReportData = (monthStart: Date, monthEnd: Date, state: AppState) => {
   const { user, sales, invoices, customers, inventory, transactions } = state;
@@ -150,15 +159,15 @@ export const generateMonthlyPdfReport = (monthStart: Date, appData: AppState) =>
     theme: 'grid',
     headStyles: { fillColor: [240, 240, 240], textColor: 0, fontStyle: 'bold' },
     body: [
-      ['Total Sales', `Rs ${formatCurrency(data.totalSales)}`],
-      ['Cash Sales', `Rs ${formatCurrency(data.cashSales)}`],
-      ['UPI Sales', `Rs ${formatCurrency(data.upiSales)}`],
-      ['Card Sales', `Rs ${formatCurrency(data.cardSales)}`],
-      ['Credit/Udhaar Sales', `Rs ${formatCurrency(data.creditSales)}`],
-      ['Payments Received', `Rs ${formatCurrency(data.paymentReceived)}`],
-      ['Total Udhaar Given', `Rs ${formatCurrency(data.udhaarGiven)}`],
-      ['Total Pending Udhaar (Overall)', `Rs ${formatCurrency(data.totalPendingUdhaar)}`],
-      ['Estimated Profit', `Rs ${formatCurrency(data.profitEstimate)}`],
+      ['Total Sales', formatPdfCurrency(data.totalSales)],
+      ['Cash Sales', formatPdfCurrency(data.cashSales)],
+      ['UPI Sales', formatPdfCurrency(data.upiSales)],
+      ['Card Sales', formatPdfCurrency(data.cardSales)],
+      ['Credit/Udhaar Sales', formatPdfCurrency(data.creditSales)],
+      ['Payments Received', formatPdfCurrency(data.paymentReceived)],
+      ['Total Udhaar Given', formatPdfCurrency(data.udhaarGiven)],
+      ['Total Pending Udhaar (Overall)', formatPdfCurrency(data.totalPendingUdhaar)],
+      ['Estimated Profit', formatPdfCurrency(data.profitEstimate)],
       ['Total Invoices', String(data.totalInvoices)],
       ['Unpaid Invoices', String(data.unpaidInvoicesCount)],
       ['Low Stock Items', String(data.lowStockCount)]
@@ -184,7 +193,7 @@ export const generateMonthlyPdfReport = (monthStart: Date, appData: AppState) =>
       body: data.top10Customers.map(c => [
         c.name || 'N/A',
         c.phone || 'N/A',
-        `Rs ${formatCurrency(c.pendingAmount)}`,
+        formatPdfCurrency(c.pendingAmount),
         c.lastPaymentDate ? format(new Date(c.lastPaymentDate), 'dd MMM yyyy') : 'No Payments',
         c.riskStatus || 'N/A'
       ])
@@ -213,7 +222,7 @@ export const generateMonthlyPdfReport = (monthStart: Date, appData: AppState) =>
         String(i.stockQty),
         i.unit || 'N/A',
         String(i.lowStockAlertQty),
-        `Rs ${formatCurrency(i.sellingPricePaise)}`
+        formatPdfCurrency(i.sellingPricePaise)
       ])
     });
     yPos = (doc as any).lastAutoTable.finalY + 30;
@@ -241,7 +250,7 @@ export const generateMonthlyPdfReport = (monthStart: Date, appData: AppState) =>
           i.invoiceNumber || 'N/A',
           cust ? cust.name : 'Walk-in',
           format(new Date(i.createdAt), 'dd MMM yyyy'),
-          `Rs ${formatCurrency(i.totalPaise)}`,
+          formatPdfCurrency(i.totalPaise),
           i.status || 'N/A'
         ];
       })
@@ -275,8 +284,8 @@ export const generateMonthlyPdfReport = (monthStart: Date, appData: AppState) =>
           itemsStr || 'N/A',
           cust ? cust.name : 'Walk-in',
           s.paymentMode || 'N/A',
-          `Rs ${formatCurrency(s.totalPaise)}`,
-          s.profitPaise ? `Rs ${formatCurrency(s.profitPaise)}` : 'N/A'
+          formatPdfCurrency(s.totalPaise),
+          s.profitPaise ? formatPdfCurrency(s.profitPaise) : 'N/A'
         ];
       })
     });
