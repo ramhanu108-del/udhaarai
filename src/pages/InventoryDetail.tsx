@@ -24,7 +24,12 @@ export const InventoryDetail = () => {
   const handleAdjustStock = () => {
     const qty = parseFloat(adjustQty);
     
-    const qtyValidation = validateQuantityByUnit(qty, item.unit);
+    if (isNaN(qty) || !isFinite(qty)) {
+       alert('Quantity positive honi chahiye.');
+       return;
+    }
+
+    const qtyValidation = validateQuantityByUnit(qty, item.unit, { allowZero: adjustmentType === 'correction' });
     if (!qtyValidation.valid) {
       alert(qtyValidation.error || 'Invalid quantity');
       return;
@@ -37,7 +42,7 @@ export const InventoryDetail = () => {
 
     // Prevent reducing below 0 unless explicit correction
     if (adjustmentType === 'reduce' && item.stockQty + delta < 0) {
-      alert('Cannot reduce stock below 0. Use "Correction" if needed.');
+      alert('Stock se zyada reduce nahi kar sakte.');
       return;
     }
 
@@ -45,6 +50,12 @@ export const InventoryDetail = () => {
     setIsAdjusting(false);
     setAdjustQty('');
     setAdjustReason('');
+  };
+
+  const handleQtyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (val.includes('-')) return;
+    setAdjustQty(val);
   };
 
   const handleArchive = () => {
@@ -115,15 +126,22 @@ export const InventoryDetail = () => {
                    </label>
                    <Input 
                      type="number"
+                     min="0"
                      step={isDecimalAllowedForUnit(item.unit) ? "0.001" : "1"}
                      inputMode={isDecimalAllowedForUnit(item.unit) ? "decimal" : "numeric"}
                      placeholder="0"
                      value={adjustQty}
-                     onChange={e => setAdjustQty(e.target.value)}
+                     onChange={handleQtyChange}
+                     onKeyDown={(e) => {
+                       if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                         e.preventDefault();
+                       }
+                     }}
                      className="bg-slate-50 border-slate-200"
                    />
                    <p className="text-[10px] text-slate-500 font-semibold mt-1">
-                     {isDecimalAllowedForUnit(item.unit) ? 'Decimal allowed' : 'Whole number only'}
+                     {isDecimalAllowedForUnit(item.unit) ? 'Decimal allowed. ' : 'Whole number only. '}
+                     Positive number daalein. Add/Reduce/Correct ka action button stock ka direction decide karega.
                    </p>
                 </div>
 

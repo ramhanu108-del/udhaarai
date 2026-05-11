@@ -7,9 +7,13 @@ export function isDecimalAllowedForUnit(unit: string | InventoryUnit): boolean {
   return !COUNT_BASED_UNITS.includes(unit.toLowerCase());
 }
 
-export function validateQuantityByUnit(value: number, unit: string | InventoryUnit): { valid: boolean; error?: string } {
-  if (isNaN(value) || !isFinite(value) || value <= 0) {
-    return { valid: false, error: 'Valid positive quantity required' };
+export function validateQuantityByUnit(value: number, unit: string | InventoryUnit, options?: { allowZero?: boolean }): { valid: boolean; error?: string } {
+  if (isNaN(value) || !isFinite(value) || value < 0) {
+    return { valid: false, error: 'Quantity positive honi chahiye.' };
+  }
+  
+  if (value === 0 && !options?.allowZero) {
+    return { valid: false, error: 'Quantity > 0 honi chahiye.' };
   }
 
   const isDecimalAllowed = isDecimalAllowedForUnit(unit);
