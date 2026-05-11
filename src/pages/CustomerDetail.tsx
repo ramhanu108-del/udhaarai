@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { getCustomerLedger, getCustomerBalance } from '../store/selectors';
 import { formatCurrency, generateReminderMessage, generateWhatsAppLink, ReminderTone } from '../utils';
-import { ArrowLeft, MessageCircle, Phone, FileText, Copy, Check } from 'lucide-react';
+import { ArrowLeft, MessageCircle, Phone, FileText, Copy, Check, Download } from 'lucide-react';
 import { format } from 'date-fns';
 
 export const CustomerDetail = () => {
@@ -15,6 +15,8 @@ export const CustomerDetail = () => {
   const [showReminderOptions, setShowReminderOptions] = useState(false);
   const [transactionToVoid, setTransactionToVoid] = useState<{id: string, isInventoryLinked: boolean} | null>(null);
   const [voidMessage, setVoidMessage] = useState('');
+  const [showStatementOptions, setShowStatementOptions] = useState(false);
+  const [copiedStatement, setCopiedStatement] = useState(false);
 
   
   const customer = customers.find(c => c.id === id);
@@ -31,7 +33,20 @@ export const CustomerDetail = () => {
     );
   }
 
-  const generatedMessage = user ? generateReminderMessage(customer.name, customer.totalPending, user.businessName, user.language, tone) : '';
+  let oldestDueDate: string | undefined = undefined;
+  if (customer.totalPending > 0) {
+    const udhaarsWithDue = ledger.filter(t => (t.type === 'udhaar' || t.type === 'sale_credit') && t.dueDate && t.status === 'active');
+    if (udhaarsWithDue.length > 0) {
+       const earliest = udhaarsWithDue.reduce((prev, curr) => {
+          const prevTime = new Date(prev.dueDate!).getTime();
+          const currTime = new Date(curr.dueDate!).getTime();
+          return currTime < prevTime ? curr : prev;
+       });
+       oldestDueDate = format(new Date(earliest.dueDate!), 'dd MMM yyyy');
+    }
+  }
+
+  const generatedMessage = user ? generateReminderMessage(customer.name, customer.totalPending, user.businessName, user.language, tone, oldestDueDate) : '';
 
   const handleReminder = () => {
     if(!user) return;
@@ -54,6 +69,74 @@ export const CustomerDetail = () => {
         setTransactionToVoid(null);
       }, 2000);
     }
+  };
+
+  const generateStatementText = () => {
+    let totalUdhaar = 0;
+    let totalPayment = 0;
+    const activeLedger = ledger.filter(t => t.status === 'active');
+    
+    activeLedger.forEach(t => {
+      if (t.type === 'udhaar' || t.type === 'sale_credit') totalUdhaar += t.amount;
+      if (t.type === 'payment' || t.type === 'refund') totalPayment += t.amount;
+    });
+
+    const balStr = customer.totalPending > 0 ? `pending balance ₹${formatCurrency(customer.totalPending)}` : 
+                   customer.totalPending < 0 ? `advance balance ₹${formatCurrency(Math.abs(customer.totalPending))}` : 
+                   `balance ₹0`;
+
+    let text = `Namaste ${customer.name} ji, aapka current ${balStr} hai.\n\n`;
+
+    text += `*--- Khata Statement ---*\n`;
+    text += `Shop: ${user?.businessName || 'SmartUdhaar AI'}\n`;
+    text += `Customer: ${customer.name}\n`;
+    if (customer.phone) text += `Phone: ${customer.phone}\n`;
+    text += `Date: ${format(new Date(), 'dd MMM yyyy')}\n\n`;
+    
+    text += `Total Udhaar: ₹${formatCurrency(totalUdhaar)}\n`;
+    text += `Total Payment: ₹${formatCurrency(totalPayment)}\n`;
+    text += `Balance: ₹${formatCurrency(Math.abs(customer.totalPending))} ${customer.totalPending > 0 ? '(Due)' : customer.totalPending < 0 ? '(Adv)' : ''}\n\n`;
+    text += `*--- Last 10 Transactions ---*\n`;
+    
+    const last10 = [...activeLedger].reverse().slice(0, 10);
+    last10.forEach(t => {
+      const isUdhaar = t.type === 'udhaar' || t.type === 'sale_credit';
+      const sign = isUdhaar ? '+' : '-';
+      text += `${format(t.createdAt, 'dd/MM/yy')}: ${sign}₹${formatCurrency(t.amount)}`;
+      if (t.description) {
+        text += ` (${t.description.substring(0, 20)})`;
+      }
+      text += `\n`;
+    });
+
+    if (customer.totalPending > 0) {
+      text += `\nKripya pending amount clear karein.\n`;
+    }
+    return text;
+  };
+
+  const handleShareStatementWA = () => {
+    const text = generateStatementText();
+    const link = generateWhatsAppLink(customer.phone, text);
+    window.open(link, '_blank');
+  };
+
+  const handleCopyStatement = () => {
+    const text = generateStatementText();
+    navigator.clipboard.writeText(text);
+    setCopiedStatement(true);
+    setTimeout(() => setCopiedStatement(false), 2000);
+  };
+
+  const handleDownloadStatement = () => {
+    const text = generateStatementText();
+    const element = document.createElement("a");
+    const file = new Blob([text], {type: 'text/plain'});
+    element.href = URL.createObjectURL(file);
+    element.download = `Statement_${customer.name.replace(/\s+/g, '_')}_${format(new Date(), 'ddMMMyyyy')}.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
   };
 
   return (
@@ -146,6 +229,13 @@ export const CustomerDetail = () => {
              Give Udhaar
            </button>
         </div>
+        <button 
+           onClick={() => setShowStatementOptions(true)}
+           className="w-full mt-2 bg-indigo-50 text-indigo-700 border border-indigo-100 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center active:scale-95 transition-transform"
+        >
+           <FileText className="w-4 h-4 mr-2" />
+           Statement Share Karo
+        </button>
       </div>
 
       {/* Transactions List */}
@@ -181,6 +271,12 @@ export const CustomerDetail = () => {
                    
                    {tx.description && (
                      <p className="text-[11px] text-slate-600 mb-2 mt-1">{tx.description}</p>
+                   )}
+
+                   {tx.dueDate && isUdhaar && (
+                     <p className="text-[10px] font-bold text-amber-600 mb-2 mt-1">
+                       Due: {format(new Date(tx.dueDate), 'dd MMM yyyy')}
+                     </p>
                    )}
 
                    <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-200/60">
@@ -233,6 +329,44 @@ export const CustomerDetail = () => {
                 className="px-4 py-2 text-sm font-bold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors shadow-sm"
               >
                 Confirm Void
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Statement Modal */}
+      {showStatementOptions && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-xl animate-in fade-in zoom-in duration-200">
+            <h3 className="text-lg font-bold text-slate-900 mb-4 text-center">Customer Statement</h3>
+            <div className="grid grid-cols-1 gap-3">
+              <button 
+                onClick={handleShareStatementWA}
+                className="w-full flex items-center justify-center gap-2 bg-[#25D366] text-white py-3 rounded-xl font-bold shadow-sm active:scale-95 transition-transform"
+              >
+                <MessageCircle className="w-5 h-5" />
+                WhatsApp Share
+              </button>
+              <button 
+                onClick={handleCopyStatement}
+                className="w-full flex items-center justify-center gap-2 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold active:scale-95 transition-transform"
+              >
+                {copiedStatement ? <Check className="w-5 h-5 text-emerald-600" /> : <Copy className="w-5 h-5" />}
+                {copiedStatement ? 'Copied' : 'Copy Statement'}
+              </button>
+              <button 
+                onClick={handleDownloadStatement}
+                className="w-full flex items-center justify-center gap-2 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold active:scale-95 transition-transform"
+              >
+                <Download className="w-5 h-5" />
+                Download TXT
+              </button>
+              <button 
+                onClick={() => setShowStatementOptions(false)}
+                className="w-full py-3 text-slate-500 font-bold hover:bg-slate-50 rounded-xl transition-colors mt-2"
+              >
+                Cancel
               </button>
             </div>
           </div>

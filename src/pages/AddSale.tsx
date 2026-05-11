@@ -25,6 +25,7 @@ export const AddSale = () => {
     customerId: '',
     note: '',
     inventoryItemId: '',
+    dueDate: '',
   });
 
   const [errorText, setErrorText] = useState('');
@@ -118,7 +119,8 @@ export const AddSale = () => {
         amount: totalPaise,
         description: `${qty}x ${formData.name}${noteStr}`,
         linkedSaleId: saleId,
-        paymentMode: 'udhaar'
+        paymentMode: 'udhaar',
+        dueDate: formData.dueDate || undefined,
       });
     }
 
@@ -345,7 +347,7 @@ export const AddSale = () => {
           <div className="bg-red-50 p-4 rounded-xl border border-red-100">
              <label className="text-xs font-bold text-red-800 mb-1.5 block uppercase tracking-wider">Select Customer *</label>
              <select 
-               className="flex h-12 w-full rounded-xl border border-red-200 bg-white px-4 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500 mb-2"
+               className="flex h-12 w-full rounded-xl border border-red-200 bg-white px-4 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500 mb-3"
                value={formData.customerId}
                onChange={(e) => setFormData(p => ({...p, customerId: e.target.value}))}
                required
@@ -355,6 +357,16 @@ export const AddSale = () => {
                  <option key={c.id} value={c.id}>{c.name}</option>
                ))}
              </select>
+             
+             <label className="text-xs font-bold text-red-800 mb-1.5 block uppercase tracking-wider">Payment kab tak lena hai? (Optional)</label>
+             <Input 
+               type="date"
+               className="h-12 bg-white border-red-200 font-medium mb-3"
+               value={formData.dueDate}
+               min={new Date().toISOString().split('T')[0]}
+               onChange={e => setFormData(p => ({...p, dueDate: e.target.value}))}
+             />
+
              <p className="text-[10px] text-red-600 font-semibold mb-2">Is sale ka amount customer ke pending udhaar mein add hoga.</p>
              <Button type="button" onClick={() => navigate('/customers/new')} variant="outline" className="w-full text-xs h-10 border-red-200 text-red-700 bg-white">
                 Naya Customer Add Karo

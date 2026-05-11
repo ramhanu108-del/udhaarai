@@ -50,7 +50,7 @@ export interface Transaction {
   type: TransactionType;
   amount: number; // in paise
   description: string;
-  dueDate?: number;
+  dueDate?: string;
   status: TransactionStatus;
   paymentMode?: PaymentMode;
   linkedSaleId?: string;
@@ -119,7 +119,7 @@ export interface Invoice {
   status: TransactionStatus;
   createdAt: number;
   updatedAt: number;
-  dueDate?: number;
+  dueDate?: string;
   isDemo?: boolean;
 }
 

@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { User, Customer, Transaction, Sale, Invoice, InventoryItem, StockMovement, StockMovementType, SyncStatus, SyncQueueItem, SyncOperation } from '../types';
 import { sanitizeQuantityByUnit } from '../utils/quantity';
 
-interface AppState {
+export interface AppState {
   user: User | null;
   // Auth & Sync metadata
   authUser: { id: string, email: string } | null;

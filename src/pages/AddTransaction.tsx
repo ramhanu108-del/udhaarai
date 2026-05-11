@@ -22,6 +22,7 @@ export const AddTransaction = () => {
     description: '',
     type: initialType as 'udhaar' | 'payment',
     paymentMode: 'cash' as 'cash' | 'upi' | 'card',
+    dueDate: '',
   });
 
   const [udhaarMode, setUdhaarMode] = useState<'manual' | 'inventory'>('manual');
@@ -148,6 +149,7 @@ export const AddTransaction = () => {
       inventoryItemId: isInventoryMode ? selectedInventoryId : paymentLinkedInventoryId,
       stockReducedQty: isInventoryMode ? parseFloat(inventoryQty) : undefined,
       linkedUdhaarTransactionId: (!isUdhaar && paymentModeRef === 'udhaar') ? selectedUdhaarId : undefined,
+      dueDate: (isUdhaar && formData.dueDate) ? formData.dueDate : undefined,
     });
     
     if (isInventoryMode && selectedInventoryId) {
@@ -357,6 +359,20 @@ export const AddTransaction = () => {
             onChange={e => setFormData(p => ({...p, description: e.target.value}))}
           />
         </div>
+
+        {/* Due Date Input */}
+        {isUdhaar && (
+           <div>
+             <label className="text-xs font-bold text-slate-700 mb-1.5 block uppercase tracking-wider">Payment kab tak lena hai? (Optional)</label>
+             <Input 
+               type="date"
+               className="h-12 bg-slate-50 border-slate-200 font-medium"
+               value={formData.dueDate}
+               min={new Date().toISOString().split('T')[0]}
+               onChange={e => setFormData(p => ({...p, dueDate: e.target.value}))}
+             />
+           </div>
+        )}
 
         {/* Payment mode (if Payment) */}
         {!isUdhaar && (

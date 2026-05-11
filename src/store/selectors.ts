@@ -100,9 +100,13 @@ export const getCustomerLedger = (customerId: string, state: any = useStore.getS
 
 export const getOverdueCustomers = (state: any = useStore.getState()) => {
   const now = Date.now();
-  const txs = getTransactions(state).filter((tx: Transaction) => 
-    (tx.type === 'udhaar' || tx.type === 'sale_credit') && tx.dueDate && tx.dueDate < now
-  );
+  const txs = getTransactions(state).filter((tx: Transaction) => {
+    if ((tx.type === 'udhaar' || tx.type === 'sale_credit') && tx.dueDate) {
+      const dueTime = typeof tx.dueDate === 'number' ? tx.dueDate : new Date(tx.dueDate).setHours(23, 59, 59, 999);
+      return dueTime < now;
+    }
+    return false;
+  });
   
   // Actually, overdue applies to the balance. A simpler way: anyone with a balance > 0 and has an udhaar past due date that hasn't been completely covered by payments.
   // For MVP: if they have a positive balance and ANY udhaar transaction overdue
@@ -115,7 +119,10 @@ export const getOverdueCustomers = (state: any = useStore.getState()) => {
     if (!balances[tx.customerId]) balances[tx.customerId] = 0;
     if (tx.type === 'udhaar' || tx.type === 'sale_credit') {
       balances[tx.customerId] += tx.amount;
-      if (tx.dueDate && tx.dueDate < now) hasOverdueTx[tx.customerId] = true;
+      if (tx.dueDate) {
+        const dueTime = typeof tx.dueDate === 'number' ? tx.dueDate : new Date(tx.dueDate).setHours(23, 59, 59, 999);
+        if (dueTime < now) hasOverdueTx[tx.customerId] = true;
+      }
     }
     else if (tx.type === 'payment' || tx.type === 'refund' || tx.type === 'adjustment') {
       balances[tx.customerId] -= tx.amount;
