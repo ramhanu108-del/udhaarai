@@ -7,6 +7,7 @@ import { ArrowLeft, Package } from 'lucide-react';
 import { BottomActionBar } from '../components/layout/BottomActionBar';
 
 import { validateQuantityByUnit, isDecimalAllowedForUnit } from '../utils/quantity';
+import { validateMoneyAmount, sanitizeMoneyInput, handleMoneyKeyDown } from '../utils/money';
 
 export const AddTransaction = () => {
   const navigate = useNavigate();
@@ -99,8 +100,9 @@ export const AddTransaction = () => {
     const parsedAmount = parseFloat(formData.amount);
     
     // Robust validation
-    if (isNaN(parsedAmount) || parsedAmount <= 0) {
-      setErrorText('Please enter a valid amount greater than 0.');
+    const amountVal = validateMoneyAmount(formData.amount, { required: true });
+    if (!amountVal.valid) {
+      setErrorText(amountVal.error || 'Invalid amount');
       return;
     }
 
@@ -332,12 +334,14 @@ export const AddTransaction = () => {
              <Input 
                required 
                type="number"
+               inputMode="decimal"
                step="0.01"
-               min="0.1"
+               min="0"
                className={`pl-8 text-2xl font-bold h-14 border-slate-200 ${isInventoryMode ? 'bg-slate-100 text-slate-500' : 'bg-slate-50'}`}
                placeholder="0.00"
                value={formData.amount}
-               onChange={e => {setErrorText(''); setFormData(p => ({...p, amount: e.target.value}))}}
+               onKeyDown={handleMoneyKeyDown}
+               onChange={e => {setErrorText(''); setFormData(p => ({...p, amount: sanitizeMoneyInput(e.target.value)}))}}
                readOnly={isInventoryMode}
              />
            </div>

@@ -7,6 +7,7 @@ import { ArrowLeft, CheckCircle } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { BottomActionBar } from '../components/layout/BottomActionBar';
+import { validateMoneyAmount, sanitizeMoneyInput, handleMoneyKeyDown } from '../utils/money';
 
 export const AddInvoice = () => {
   const navigate = useNavigate();
@@ -70,18 +71,21 @@ export const AddInvoice = () => {
       return;
     }
 
-    if (isNaN(rate) || rate <= 0) {
-      setErrorText('Rate must be greater than 0.');
+    const rateVal = validateMoneyAmount(formData.rate, { required: true });
+    if (!rateVal.valid) {
+      setErrorText(rateVal.error || 'Invalid rate');
       return;
     }
 
-    if (isNaN(discount) || discount < 0) {
-      setErrorText('Discount cannot be negative.');
+    const discVal = validateMoneyAmount(formData.discount, { allowZero: true });
+    if (formData.discount && !discVal.valid) {
+      setErrorText(discVal.error || 'Invalid discount');
       return;
     }
 
-    if (isNaN(tax) || tax < 0) {
-      setErrorText('Tax cannot be negative.');
+    const taxVal = validateMoneyAmount(formData.tax, { allowZero: true });
+    if (formData.tax && !taxVal.valid) {
+      setErrorText(taxVal.error || 'Invalid tax');
       return;
     }
 
@@ -227,12 +231,14 @@ export const AddInvoice = () => {
             <Input 
               required 
               type="number" 
-              step="any"
-              min="0.1"
+              inputMode="decimal"
+              step="0.01"
+              min="0"
               className="h-12 bg-slate-50 border-slate-200 font-bold"
-              placeholder="0"
+              placeholder="0.00"
               value={formData.rate}
-              onChange={e => {setErrorText(''); setFormData(p => ({...p, rate: e.target.value}))}}
+              onKeyDown={handleMoneyKeyDown}
+              onChange={e => {setErrorText(''); setFormData(p => ({...p, rate: sanitizeMoneyInput(e.target.value)}))}}
             />
           </div>
           <div>
@@ -245,7 +251,16 @@ export const AddInvoice = () => {
               className="h-12 bg-slate-50 border-slate-200 font-bold"
               placeholder="1"
               value={formData.quantity}
-              onChange={e => {setErrorText(''); setFormData(p => ({...p, quantity: e.target.value}))}}
+              onKeyDown={(e) => {
+                 if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                   e.preventDefault();
+                 }
+              }}
+              onChange={e => {
+                  const val = e.target.value;
+                  if (val.includes('-')) return;
+                  setErrorText(''); setFormData(p => ({...p, quantity: val}))
+              }}
             />
           </div>
         </div>
@@ -255,24 +270,28 @@ export const AddInvoice = () => {
             <label className="text-xs font-bold text-slate-700 mb-1.5 block uppercase tracking-wider">Discount (₹)</label>
             <Input 
               type="number" 
-              step="any"
+              inputMode="decimal"
+              step="0.01"
               min="0"
               className="h-12 bg-slate-50 border-slate-200 font-medium"
-              placeholder="0"
+              placeholder="0.00"
               value={formData.discount}
-              onChange={e => {setErrorText(''); setFormData(p => ({...p, discount: e.target.value}))}}
+              onKeyDown={handleMoneyKeyDown}
+              onChange={e => {setErrorText(''); setFormData(p => ({...p, discount: sanitizeMoneyInput(e.target.value)}))}}
             />
           </div>
           <div>
             <label className="text-xs font-bold text-slate-700 mb-1.5 block uppercase tracking-wider">Tax (₹)</label>
             <Input 
               type="number" 
-              step="any"
+              inputMode="decimal"
+              step="0.01"
               min="0"
               className="h-12 bg-slate-50 border-slate-200 font-medium"
-              placeholder="0"
+              placeholder="0.00"
               value={formData.tax}
-              onChange={e => {setErrorText(''); setFormData(p => ({...p, tax: e.target.value}))}}
+              onKeyDown={handleMoneyKeyDown}
+              onChange={e => {setErrorText(''); setFormData(p => ({...p, tax: sanitizeMoneyInput(e.target.value)}))}}
             />
           </div>
         </div>

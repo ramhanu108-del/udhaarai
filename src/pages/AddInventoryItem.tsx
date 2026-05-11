@@ -7,6 +7,7 @@ import { Button } from '../components/ui/button';
 import { InventoryUnit } from '../types';
 import { BottomActionBar } from '../components/layout/BottomActionBar';
 import { validateQuantityByUnit, isDecimalAllowedForUnit } from '../utils/quantity';
+import { validateMoneyAmount, sanitizeMoneyInput, handleMoneyKeyDown } from '../utils/money';
 
 export const AddInventoryItem = () => {
   const navigate = useNavigate();
@@ -33,23 +34,25 @@ export const AddInventoryItem = () => {
       return;
     }
 
+    const ppVal = validateMoneyAmount(formData.purchasePrice, { allowZero: true });
+    if (formData.purchasePrice && !ppVal.valid) {
+      setError(ppVal.error || 'Invalid purchase price');
+      return;
+    }
+
+    const spVal = validateMoneyAmount(formData.sellingPrice, { required: true });
+    if (!spVal.valid) {
+      setError(spVal.error || 'Invalid selling price');
+      return;
+    }
+
     const purchasePricePaise = Math.round((parseFloat(formData.purchasePrice) || 0) * 100);
     const sellingPricePaise = Math.round((parseFloat(formData.sellingPrice) || 0) * 100);
     const stockQty = parseFloat(formData.stockQty) || 0;
     const lowStockAlertQty = parseFloat(formData.lowStockAlertQty) || 0;
 
-    if (purchasePricePaise < 0) {
-      setError('Purchase price cannot be negative.');
-      return;
-    }
-    
-    if (sellingPricePaise <= 0) {
-      setError('Selling price must be greater than 0.');
-      return;
-    }
-    
     if (stockQty < 0 || lowStockAlertQty < 0) {
-      setError('Quantity cannot be negative.');
+      setError('Quantity positive honi chahiye.');
       return;
     }
 
@@ -150,8 +153,12 @@ export const AddInventoryItem = () => {
                  <label className="text-xs font-bold text-slate-700 mb-1.5 block uppercase tracking-wider">Purchase Price (₹)</label>
                  <Input 
                    type="number"
+                   inputMode="decimal"
+                   step="0.01"
+                   min="0"
                    value={formData.purchasePrice}
-                   onChange={e => setFormData({ ...formData, purchasePrice: e.target.value })}
+                   onKeyDown={handleMoneyKeyDown}
+                   onChange={e => {setError(''); setFormData({ ...formData, purchasePrice: sanitizeMoneyInput(e.target.value) })}}
                    placeholder="0.00"
                    className="bg-slate-50 border-slate-200"
                  />
@@ -160,8 +167,12 @@ export const AddInventoryItem = () => {
                  <label className="text-xs font-bold text-slate-700 mb-1.5 block uppercase tracking-wider">Selling Price (₹) *</label>
                  <Input 
                    type="number"
+                   inputMode="decimal"
+                   step="0.01"
+                   min="0"
                    value={formData.sellingPrice}
-                   onChange={e => setFormData({ ...formData, sellingPrice: e.target.value })}
+                   onKeyDown={handleMoneyKeyDown}
+                   onChange={e => {setError(''); setFormData({ ...formData, sellingPrice: sanitizeMoneyInput(e.target.value) })}}
                    placeholder="0.00"
                    className="bg-slate-50 border-slate-200 font-bold text-indigo-900"
                  />

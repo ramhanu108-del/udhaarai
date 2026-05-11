@@ -8,6 +8,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { BottomActionBar } from '../components/layout/BottomActionBar';
 import { validateQuantityByUnit, isDecimalAllowedForUnit } from '../utils/quantity';
+import { validateMoneyAmount, sanitizeMoneyInput, handleMoneyKeyDown } from '../utils/money';
 
 export const AddSale = () => {
   const navigate = useNavigate();
@@ -51,18 +52,21 @@ export const AddSale = () => {
       return;
     }
 
-    if (isNaN(sp) || sp <= 0) {
-      setErrorText('Selling price must be greater than 0.');
+    const spVal = validateMoneyAmount(formData.sellingPrice, { required: true });
+    if (!spVal.valid) {
+      setErrorText(spVal.error || 'Invalid selling price');
       return;
     }
 
-    if (isNaN(cp) || cp < 0) {
-      setErrorText('Cost price cannot be negative.');
+    const cpVal = validateMoneyAmount(formData.costPrice, { allowZero: true });
+    if (formData.costPrice && !cpVal.valid) {
+      setErrorText(cpVal.error || 'Invalid cost price');
       return;
     }
 
-    if (isNaN(discount) || discount < 0) {
-      setErrorText('Discount cannot be negative.');
+    const discountVal = validateMoneyAmount(formData.discount, { allowZero: true });
+    if (formData.discount && !discountVal.valid) {
+      setErrorText(discountVal.error || 'Invalid discount');
       return;
     }
 
@@ -244,12 +248,14 @@ export const AddSale = () => {
             <Input 
               required 
               type="number" 
-              step="any"
-              min="0.1"
+              inputMode="decimal"
+              step="0.01"
+              min="0"
               className="h-12 bg-slate-50 border-slate-200 font-bold"
-              placeholder="0"
+              placeholder="0.00"
               value={formData.sellingPrice}
-              onChange={e => {setErrorText(''); setFormData(p => ({...p, sellingPrice: e.target.value}))}}
+              onKeyDown={handleMoneyKeyDown}
+              onChange={e => {setErrorText(''); setFormData(p => ({...p, sellingPrice: sanitizeMoneyInput(e.target.value)}))}}
             />
           </div>
           <div>
@@ -261,11 +267,20 @@ export const AddSale = () => {
               type="number" 
               step={selectedItemInfo ? (isDecimalAllowedForUnit(selectedItemInfo.unit) ? "0.001" : "1") : "any"}
               inputMode={selectedItemInfo ? (isDecimalAllowedForUnit(selectedItemInfo.unit) ? "decimal" : "numeric") : "decimal"}
-              min="0.001"
+              min="0"
               className="h-12 bg-slate-50 border-slate-200 font-bold"
               placeholder="1"
               value={formData.quantity}
-              onChange={e => {setErrorText(''); setFormData(p => ({...p, quantity: e.target.value}))}}
+              onKeyDown={(e) => {
+                 if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                   e.preventDefault();
+                 }
+              }}
+              onChange={e => {
+                  const val = e.target.value;
+                  if (val.includes('-')) return;
+                  setErrorText(''); setFormData(p => ({...p, quantity: val}))
+              }}
             />
             {selectedItemInfo && (
               <p className="text-[10px] text-slate-500 font-semibold mt-1">
@@ -280,24 +295,28 @@ export const AddSale = () => {
             <label className="text-xs font-bold text-slate-700 mb-1.5 block uppercase tracking-wider">Total Discount (₹)</label>
             <Input 
               type="number" 
-              step="any"
+              inputMode="decimal"
+              step="0.01"
               min="0"
               className="h-12 bg-slate-50 border-slate-200 font-medium"
               placeholder="0 (Optional)"
               value={formData.discount}
-              onChange={e => {setErrorText(''); setFormData(p => ({...p, discount: e.target.value}))}}
+              onKeyDown={handleMoneyKeyDown}
+              onChange={e => {setErrorText(''); setFormData(p => ({...p, discount: sanitizeMoneyInput(e.target.value)}))}}
             />
           </div>
           <div>
             <label className="text-xs font-bold text-slate-700 mb-1.5 block uppercase tracking-wider">Cost Price (₹/item)</label>
             <Input 
               type="number" 
-              step="any"
+              inputMode="decimal"
+              step="0.01"
               min="0"
               className="h-12 bg-slate-50 border-slate-200 font-medium"
               placeholder="0 (For profit calcs)"
               value={formData.costPrice}
-              onChange={e => {setErrorText(''); setFormData(p => ({...p, costPrice: e.target.value}))}}
+              onKeyDown={handleMoneyKeyDown}
+              onChange={e => {setErrorText(''); setFormData(p => ({...p, costPrice: sanitizeMoneyInput(e.target.value)}))}}
             />
           </div>
         </div>
