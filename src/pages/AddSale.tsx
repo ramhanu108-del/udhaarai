@@ -92,7 +92,7 @@ export const AddSale = () => {
       }
 
       if (selectedInventoryItem.stockQty < requiredStock) {
-        setErrorText(`Quantity cannot exceed available stock (${selectedInventoryItem.stockQty} ${selectedInventoryItem.unit}).`);
+        setErrorText(`Stock available nahi hai. Sirf ${selectedInventoryItem.stockQty} ${selectedInventoryItem.unit} available hai.`);
         return;
       }
     }
@@ -269,7 +269,8 @@ export const AddSale = () => {
               type="number" 
               step={selectedItemInfo ? (isDecimalAllowedForUnit(selectedItemInfo.unit) ? "0.001" : "1") : "any"}
               inputMode={selectedItemInfo ? (isDecimalAllowedForUnit(selectedItemInfo.unit) ? "decimal" : "numeric") : "decimal"}
-              min="0"
+              min={selectedItemInfo ? (isDecimalAllowedForUnit(selectedItemInfo.unit) ? "0.001" : "1") : "0"}
+              max={selectedItemInfo ? selectedItemInfo.stockQty : undefined}
               className="h-12 bg-slate-50 border-slate-200 font-bold"
               placeholder="1"
               value={formData.quantity}
@@ -281,6 +282,7 @@ export const AddSale = () => {
               onChange={e => {
                   const val = e.target.value;
                   if (val.includes('-')) return;
+                  // Stop the user from typing more than available stock, optional but better UX. We rely on save block mostly.
                   setErrorText(''); setFormData(p => ({...p, quantity: val}))
               }}
             />

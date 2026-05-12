@@ -208,9 +208,10 @@ export const useStore = create<AppState>()(
 
         let stockMovements = state.stockMovements ? [...state.stockMovements] : [];
         let updatedInventory = state.inventory ? [...state.inventory] : [];
+        let updatedSales = state.sales ? [...state.sales] : [];
 
-        // If transaction has linked inventory item, restore stock
-        if (tx.inventoryItemId && tx.stockReducedQty) {
+        // If transaction has linked inventory item, AND no linked sale (to avoid double restore), restore stock
+        if (tx.inventoryItemId && tx.stockReducedQty && !tx.linkedSaleId) {
           const item = updatedInventory.find(i => i.id === tx.inventoryItemId);
           if (item) {
             updatedInventory = updatedInventory.map(i => 
@@ -232,6 +233,40 @@ export const useStore = create<AppState>()(
           t.id === id ? { ...t, status: 'void' as const, updatedAt: nowTime } : t
         );
         
+        if (tx.linkedSaleId) {
+          const linkedSale = updatedSales.find(s => s.id === tx.linkedSaleId);
+          if (linkedSale && linkedSale.status !== 'void') {
+            updatedSales = updatedSales.map(s => 
+              s.id === tx.linkedSaleId ? { ...s, status: 'void' as const, updatedAt: nowTime } : s
+            );
+            
+            // Restore stock from sale items
+            for (const item of linkedSale.items || []) {
+              if (item.inventoryItemId && item.stockReducedQty && item.stockReducedQty > 0) {
+                updatedInventory = updatedInventory.map((inv) =>
+                  inv.id === item.inventoryItemId
+                    ? {
+                        ...inv,
+                        stockQty: sanitizeQuantityByUnit(Number(inv.stockQty || 0) + Number(item.stockReducedQty || 0), inv.unit),
+                        updatedAt: nowTime,
+                      }
+                    : inv
+                );
+
+                stockMovements.push({
+                  id: generateId(),
+                  inventoryItemId: item.inventoryItemId,
+                  type: "void_restore",
+                  qtyChange: Number(item.stockReducedQty),
+                  reason: "Sale void stock restore (via Tx)",
+                  linkedSaleId: linkedSale.id,
+                  createdAt: nowTime,
+                });
+              }
+            }
+          }
+        }
+        
         const newBalance = computeCustomerBalance(updatedTransactions, tx.customerId);
         let riskStatus: 'Low' | 'Medium' | 'High' | undefined = 'Low';
         if (newBalance > 1000000) riskStatus = 'High';
@@ -245,11 +280,17 @@ export const useStore = create<AppState>()(
           transactions: updatedTransactions,
           customers: updatedCustomers,
           inventory: updatedInventory,
-          stockMovements
+          stockMovements,
+          sales: updatedSales
         });
 
         const updatedTx = updatedTransactions.find(t => t.id === id);
         if (state.authUser && updatedTx) get().queueSyncAction('transactions', 'update', updatedTx);
+        
+        if (tx.linkedSaleId && state.authUser) {
+           const updatedSaleSync = updatedSales.find(s => s.id === tx.linkedSaleId);
+           if (updatedSaleSync) get().queueSyncAction('sales', 'update', updatedSaleSync);
+        }
         
         return { ok: true, message: "Transaction voided successfully" };
       },

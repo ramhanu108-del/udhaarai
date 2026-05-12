@@ -42,7 +42,7 @@ export const InventoryDetail = () => {
 
     // Prevent reducing below 0 unless explicit correction
     if (adjustmentType === 'reduce' && item.stockQty + delta < 0) {
-      alert('Stock se zyada reduce nahi kar sakte.');
+      alert(`Stock available nahi hai. Sirf ${item.stockQty} ${item.unit} available hai.`);
       return;
     }
 
