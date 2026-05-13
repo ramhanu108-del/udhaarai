@@ -150,7 +150,7 @@ export const AddInventoryItem = () => {
         <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-4">
            <div className="grid grid-cols-2 gap-4">
               <div>
-                 <label className="text-xs font-bold text-slate-700 mb-1.5 block uppercase tracking-wider">Purchase Price (₹)</label>
+                 <label className="text-xs font-bold text-slate-700 mb-1.5 block uppercase tracking-wider">Purchase Price (₹/{formData.unit})</label>
                  <Input 
                    type="number"
                    inputMode="decimal"
@@ -164,7 +164,7 @@ export const AddInventoryItem = () => {
                  />
               </div>
               <div>
-                 <label className="text-xs font-bold text-slate-700 mb-1.5 block uppercase tracking-wider">Selling Price (₹) *</label>
+                 <label className="text-xs font-bold text-slate-700 mb-1.5 block uppercase tracking-wider">Selling Price (₹/{formData.unit}) *</label>
                  <Input 
                    type="number"
                    inputMode="decimal"
@@ -199,12 +199,22 @@ export const AddInventoryItem = () => {
                    step={isDecimalAllowedForUnit(formData.unit) ? "0.001" : "1"}
                    inputMode={isDecimalAllowedForUnit(formData.unit) ? "decimal" : "numeric"}
                    value={formData.stockQty}
+                   onKeyDown={(e) => {
+                     if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                       e.preventDefault();
+                     }
+                     if (!isDecimalAllowedForUnit(formData.unit)) {
+                       if (e.key === '.') {
+                         e.preventDefault();
+                       }
+                     }
+                   }}
                    onChange={e => setFormData({ ...formData, stockQty: e.target.value })}
                    placeholder="0"
                    className="bg-slate-50 border-slate-200"
                  />
                  <p className="text-[10px] text-slate-500 font-semibold mt-1">
-                   {isDecimalAllowedForUnit(formData.unit) ? 'Decimal allowed' : 'Whole number only'}
+                   {isDecimalAllowedForUnit(formData.unit) ? 'Decimal allowed up to 3 places' : 'Whole number only'}
                  </p>
               </div>
               <div>
@@ -233,12 +243,22 @@ export const AddInventoryItem = () => {
                 step={isDecimalAllowedForUnit(formData.unit) ? "0.001" : "1"}
                 inputMode={isDecimalAllowedForUnit(formData.unit) ? "decimal" : "numeric"}
                 value={formData.lowStockAlertQty}
+                onKeyDown={(e) => {
+                  if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                    e.preventDefault();
+                  }
+                  if (!isDecimalAllowedForUnit(formData.unit)) {
+                    if (e.key === '.') {
+                      e.preventDefault();
+                    }
+                  }
+                }}
                 onChange={e => setFormData({ ...formData, lowStockAlertQty: e.target.value })}
                 placeholder="5"
                 className="bg-slate-50 border-slate-200 w-1/2"
               />
               <p className="text-[10px] text-slate-500 font-semibold mt-1">
-                {isDecimalAllowedForUnit(formData.unit) ? 'Decimal allowed' : 'Whole number only'}
+                {isDecimalAllowedForUnit(formData.unit) ? 'Decimal allowed up to 3 places' : 'Whole number only'}
               </p>
               <p className="text-[10px] text-slate-400 font-medium mt-1">Jab stock itna bachega toh dashboard par alert ayega.</p>
            </div>

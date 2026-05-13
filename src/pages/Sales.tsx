@@ -219,6 +219,14 @@ export const Sales = () => {
               </p>
             </div>
             <div>
+              <p className="text-[9px] text-indigo-100 uppercase font-bold tracking-wider">
+                Advance Adj
+              </p>
+              <p className="text-xs font-bold text-indigo-100">
+                {formatCurrency(summary.advancePaise)}
+              </p>
+            </div>
+            <div>
               <p className="text-[9px] text-yellow-300 uppercase font-bold tracking-wider">
                 Udhaar Sales
               </p>
@@ -385,6 +393,11 @@ export const Sales = () => {
                           <span className="font-bold">{customer.name}</span>
                         </p>
                       )}
+                      {sale.advanceUsedPaise ? (
+                        <p className="text-[9px] font-bold text-indigo-600 mt-1">
+                          Advance Used: {formatCurrency(sale.advanceUsedPaise)}
+                        </p>
+                      ) : null}
                       {sale.profitPaise ? (
                         <p className="text-[9px] font-bold text-emerald-600 mt-1">
                           Profit: {formatCurrency(sale.profitPaise)}
@@ -462,11 +475,19 @@ export const Sales = () => {
             </div>
 
             <div className="space-y-4">
-              <div className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-100">
-                <span className="text-sm text-slate-500">Amount</span>
-                <span className="font-bold text-slate-900">
-                  {formatCurrency(selectedSale.totalPaise)}
-                </span>
+              <div className="flex flex-col bg-slate-50 p-3 rounded-lg border border-slate-100 gap-1.5">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-slate-500">Total Sale Amount</span>
+                  <span className="font-bold text-slate-900">
+                    {formatCurrency(selectedSale.totalPaise)}
+                  </span>
+                </div>
+                {selectedSale.advanceUsedPaise ? (
+                   <div className="flex justify-between items-center text-[11px] text-indigo-600 font-bold border-t border-slate-100 pt-1.5 mt-1 border-dashed">
+                      <span>Advance Adjusted</span>
+                      <span>-{formatCurrency(selectedSale.advanceUsedPaise)}</span>
+                   </div>
+                ) : null}
               </div>
 
               {!voidConfirmMode ? (

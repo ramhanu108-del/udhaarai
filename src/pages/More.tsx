@@ -1,7 +1,7 @@
 import React from 'react';
 import { useStore } from '../store/useStore';
 import { useNavigate } from 'react-router-dom';
-import { Settings as SettingsIcon, HelpCircle, HardDrive, ShieldCheck, CheckSquare, FileText, Package, Sparkles, Cloud, BarChart3, Crown } from 'lucide-react';
+import { Settings as SettingsIcon, HelpCircle, HardDrive, ShieldCheck, CheckSquare, FileText, Package, Sparkles, Cloud, BarChart3, Crown, Truck, Notebook } from 'lucide-react';
 import { InstallPWA } from '../components/InstallPWA';
 
 export const More = () => {
@@ -47,15 +47,17 @@ export const More = () => {
                New
              </span>
            </button>
-           <MenuItem icon={Sparkles} label="AI Business Assistant" onClick={() => navigate('/ai')} />
-           <MenuItem icon={BarChart3} label="My Reports" onClick={() => navigate('/reports')} />
-           <MenuItem icon={Cloud} label="Account & Sync" onClick={() => navigate('/account-sync')} />
            <MenuItem icon={Package} label="Inventory / Stock" onClick={() => navigate('/inventory')} />
+           <MenuItem icon={FileText} label="Sales Tracker (All Sales)" onClick={() => navigate('/sales')} />
+           <MenuItem icon={Notebook} label="Daily Summary (Khata)" onClick={() => navigate('/udhaar')} />
+           <MenuItem icon={BarChart3} label="Analytical Reports" onClick={() => navigate('/reports')} />
+           <MenuItem icon={HardDrive} label="Backup & Export" onClick={() => navigate('/backup')} />
+           <MenuItem icon={SettingsIcon} label="Business Settings" onClick={() => navigate('/settings')} />
+           <MenuItem icon={ShieldCheck} label="Privacy & Data Safety" onClick={() => navigate('/privacy')} />
+           <MenuItem icon={Sparkles} label="AI Business Assistant" onClick={() => navigate('/ai')} />
+           <MenuItem icon={Cloud} label="Account & Sync" onClick={() => navigate('/account-sync')} />
            <MenuItem icon={FileText} label="Invoices / Bills" onClick={() => navigate('/invoices')} />
            <MenuItem icon={CheckSquare} label="System Audit" onClick={() => navigate('/audit')} />
-           <MenuItem icon={SettingsIcon} label="Business Settings" onClick={() => navigate('/settings')} />
-           <MenuItem icon={HardDrive} label="Backup & Export" onClick={() => navigate('/backup')} />
-           <MenuItem icon={ShieldCheck} label="Privacy & Data Safety" onClick={() => navigate('/privacy')} />
            <MenuItem icon={HelpCircle} label="Help & Support" onClick={() => navigate('/help')} />
         </div>
         

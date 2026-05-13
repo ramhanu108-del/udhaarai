@@ -55,13 +55,13 @@ export const CustomerDetail: React.FC = () => {
     
     switch (tone) {
       case 'friendly':
-        return `Namaste ${customer.name}, aapka ₹${amount} udhaar pending hai. Jab samay mile tab payment kar dena. Dhanyawad! - ${shopName}`;
+        return `Namaste ${customer.name}, aapka ${amount} udhaar pending hai. Jab samay mile tab payment kar dena. Dhanyawad! - ${shopName}`;
       case 'strict':
-        return `Urgent: ${customer.name}, aapka ₹${amount} ka udhaar pending hai. Aaj payment clear karein warna aage udhaar nahi mil payega. - ${shopName}`;
+        return `Urgent: ${customer.name}, aapka ${amount} ka udhaar pending hai. Aaj payment clear karein warna aage udhaar nahi mil payega. - ${shopName}`;
       case 'short':
-        return `Paisa Baki: ₹${amount}. Jaldi jama karayein. - ${shopName}`;
+        return `Paisa Baki: ${amount}. Jaldi jama karayein. - ${shopName}`;
       default:
-        return `Namaste ${customer.name}, reminder for pending amount: ₹${amount}. Please clear it at the earliest. Thank you! - ${shopName}`;
+        return `Namaste ${customer.name}, reminder for pending amount: ${amount}. Please clear it at the earliest. Thank you! - ${shopName}`;
     }
   };
 
@@ -98,9 +98,9 @@ export const CustomerDetail: React.FC = () => {
   const displayLedger = [...ledger].sort((a, b) => b.createdAt - a.createdAt);
 
   return (
-    <div className="flex flex-col min-h-screen bg-white relative pb-36">
+    <div className="w-full px-6 pt-6 pb-8">
       {/* Header */}
-      <div className="bg-white px-6 pt-6 pb-4 border-b border-slate-100">
+      <div className="bg-white pb-4 border-b border-slate-100">
         <div className="flex items-center space-x-4 mb-4">
           <button onClick={() => navigate(-1)} className="text-slate-600 hover:bg-slate-50 p-2 rounded-full -ml-2 transition-colors">
             <ArrowLeft className="w-5 h-5" />
@@ -124,7 +124,7 @@ export const CustomerDetail: React.FC = () => {
              {customer.totalPending > 0 && <span className="ml-2 w-2 h-2 inline-block bg-red-500 rounded-full animate-pulse"></span>}
            </p>
            <h2 className={`text-3xl font-bold tracking-tight ${customer.totalPending > 0 ? 'text-red-900' : 'text-emerald-900'}`}>
-             ₹{formatCurrency(Math.abs(customer.totalPending))}
+             {formatCurrency(Math.abs(customer.totalPending))}
            </h2>
 
            {customer.totalPending > 0 && (
@@ -207,25 +207,27 @@ export const CustomerDetail: React.FC = () => {
         ) : (
            <div className="space-y-6 relative pl-4 border-l-2 border-slate-100">
              {displayLedger.map((tx) => {
-               const isUdhaar = tx.type === 'udhaar' || tx.type === 'sale_credit';
+               const isUdhaar = tx.type === 'udhaar' || tx.type === 'sale_credit' || tx.type === 'advance_adjustment';
+               const isAdvanceAdj = tx.type === 'advance_adjustment';
                return (
                  <div key={tx.id} className="relative bg-white rounded-xl p-4 border border-slate-200 shadow-sm transition-all active:shadow-none mb-2">
                    {/* Timeline dot */}
-                   <div className={`absolute -left-[23px] top-6 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm ${isUdhaar ? 'bg-red-400' : 'bg-emerald-400'}`}></div>
+                   <div className={`absolute -left-[23px] top-6 w-3.5 h-3.5 rounded-full border-2 border-white shadow-sm ${isAdvanceAdj ? 'bg-indigo-400' : (isUdhaar ? 'bg-red-400' : 'bg-emerald-400')}`}></div>
 
                    <div className="flex justify-between items-start mb-3">
                      <div className="flex-1 pr-3">
                        <p className="font-bold text-slate-900 text-sm leading-tight">
                          {tx.type === 'sale_credit' ? 'Credit Sale / Inventory Udhaar' : 
+                          tx.type === 'advance_adjustment' ? 'Advance Adjusted' : 
                           (tx.type === 'udhaar' && tx.inventoryItemId) ? 'Inventory Udhaar' : 
                           (tx.type === 'payment' && tx.linkedUdhaarTransactionId) ? 'Payment Received' : 
-                          isUdhaar ? 'Udhaar Given' : 'Payment Received'}
+                          (tx.type === 'udhaar' || tx.type === 'sale_credit') ? 'Udhaar Given' : 'Payment Received'}
                        </p>
                        <p className="text-[10px] text-slate-500 mt-1.5">{format(tx.createdAt, "dd MMM yyyy, hh:mm a")}</p>
                      </div>
-                     <div className={`text-right shrink-0 ${isUdhaar ? 'text-red-600' : 'text-emerald-600'}`}>
+                     <div className={`text-right shrink-0 ${isAdvanceAdj ? 'text-indigo-600' : (isUdhaar && tx.type !== 'advance_adjustment' ? 'text-red-600' : 'text-emerald-600')}`}>
                         <div className="font-bold text-base">
-                          {isUdhaar ? '+' : '-'}₹{formatCurrency(tx.amount)}
+                          {isUdhaar ? '+' : '-'}{formatCurrency(tx.amount)}
                         </div>
                         <div className="mt-1 flex flex-col items-end gap-1">
                           {(tx.type === 'payment' && tx.paymentMode) && (
@@ -271,7 +273,7 @@ export const CustomerDetail: React.FC = () => {
                          Pending After Entry:
                        </span>
                        <span className="text-[11px] font-bold text-slate-800">
-                          ₹{formatCurrency(Math.abs(tx.runningBalance))} {tx.runningBalance > 0 ? '(Due)' : (tx.runningBalance < 0 ? '(Adv)' : '')}
+                          {formatCurrency(Math.abs(tx.runningBalance))} {tx.runningBalance > 0 ? '(Due)' : (tx.runningBalance < 0 ? '(Adv)' : '')}
                        </span>
                      </div>
                      
@@ -294,6 +296,9 @@ export const CustomerDetail: React.FC = () => {
              </div>
            </div>
         )}
+        
+        <div className="h-6 shrink-0" aria-hidden="true" />
+        
       </div>
 
       {/* Void Success Notification */}

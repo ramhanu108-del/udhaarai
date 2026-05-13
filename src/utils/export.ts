@@ -1,4 +1,4 @@
-import { Customer, Transaction, Sale, Invoice, InventoryItem, StockMovement } from '../types';
+import { Customer, Transaction, Sale, Invoice, InventoryItem, StockMovement, Supplier, SupplierTransaction } from '../types';
 import { formatCurrency } from '.';
 
 // Generic download helper
@@ -27,7 +27,9 @@ export function exportFullBackup(state: any) {
       sales: state.sales || [],
       invoices: state.invoices || [],
       inventory: state.inventory || [],
-      stockMovements: state.stockMovements || []
+      stockMovements: state.stockMovements || [],
+      suppliers: state.suppliers || [],
+      supplierTransactions: state.supplierTransactions || []
     }
   };
 
@@ -71,6 +73,8 @@ export function validateBackup(jsonData: any) {
     const invoices: Invoice[] = Array.isArray(data.invoices) ? data.invoices : [];
     const inventory: InventoryItem[] = Array.isArray(data.inventory) ? data.inventory : [];
     const stockMovements: StockMovement[] = Array.isArray(data.stockMovements) ? data.stockMovements : [];
+    const suppliers: Supplier[] = Array.isArray(data.suppliers) ? data.suppliers : [];
+    const supplierTransactions: SupplierTransaction[] = Array.isArray(data.supplierTransactions) ? data.supplierTransactions : [];
 
     result.summary = {
       customers: customers.length,
@@ -78,6 +82,8 @@ export function validateBackup(jsonData: any) {
       sales: sales.length,
       invoices: invoices.length,
       inventory: inventory.length,
+      suppliers: suppliers.length,
+      supplierTransactions: supplierTransactions.length,
       exportedAt: jsonData.exportedAt || 'Unknown'
     };
 
@@ -102,6 +108,8 @@ export function validateBackup(jsonData: any) {
     checkUniqueness(invoices, 'invoices');
     checkUniqueness(inventory, 'inventory');
     checkUniqueness(stockMovements, 'stockMovements');
+    checkUniqueness(suppliers, 'suppliers');
+    checkUniqueness(supplierTransactions, 'supplierTransactions');
 
     // Inventory checks
     const inventoryIds = new Set(inventory.map((i: any) => i.id));
@@ -311,4 +319,44 @@ export function exportStockMovementsCSV(movements: StockMovement[], inventory: I
   
   const content = generateCSV(headers, rows);
   downloadFile(`smartudhaar-stock-movements-${getDateStr()}.csv`, content, 'text/csv;charset=utf-8;');
+}
+
+export function exportSuppliersCSV(suppliers: Supplier[], getBalance: (id: string) => number) {
+  const headers = ['Supplier Name', 'Phone', 'Email', 'Address', 'Status', 'Balance (Paise)', 'Created At'];
+  const rows = (suppliers || []).map(s => [
+    s.name,
+    s.phone || '',
+    s.email || '',
+    s.address || '',
+    s.status,
+    getBalance(s.id),
+    new Date(s.createdAt).toLocaleDateString()
+  ]);
+  
+  const content = generateCSV(headers, rows);
+  downloadFile(`smartudhaar-suppliers-${getDateStr()}.csv`, content, 'text/csv;charset=utf-8;');
+}
+
+export function exportSupplierLedgerCSV(transactions: SupplierTransaction[], suppliers: Supplier[]) {
+  const headers = ['Date', 'Supplier', 'Type', 'Description', 'Quantity', 'Unit', 'Unit Price (Paise)', 'Total Amount (Paise)', 'Status', 'Payment Mode', 'Notes', 'Inventory Linked'];
+  const rows = (transactions || []).map(tx => {
+    const supplier = suppliers.find(s => s.id === tx.supplierId);
+    return [
+       new Date(tx.createdAt).toLocaleDateString(),
+       supplier ? supplier.name : 'Unknown',
+       tx.type,
+       tx.purchaseName || '',
+       tx.quantity || '',
+       tx.unit || '',
+       tx.unitPricePaise || '',
+       tx.amountPaise,
+       tx.status,
+       tx.paymentMode || '',
+       (tx.notes || '').split(' | ')[0], // Remove the auto-added qty string from notes if we output it separately
+       tx.inventoryItemId ? 'Yes' : 'No'
+    ];
+  });
+  
+  const content = generateCSV(headers, rows);
+  downloadFile(`smartudhaar-supplier-ledger-${getDateStr()}.csv`, content, 'text/csv;charset=utf-8;');
 }

@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Onboarding } from './pages/Onboarding';
 import { Dashboard } from './pages/Dashboard';
 import { Customers } from './pages/Customers';
+import { Suppliers } from './pages/Suppliers';
 import { AddCustomer } from './pages/AddCustomer';
 import { CustomerDetail } from './pages/CustomerDetail';
 import { AddTransaction } from './pages/AddTransaction';
@@ -21,6 +22,7 @@ import { Auth } from './pages/Auth';
 import { AccountSync } from './pages/AccountSync';
 import { More } from './pages/More';
 import { AuditReport } from './pages/AuditReport';
+import { QuickActions } from './pages/QuickActions';
 import { NotFound } from './pages/NotFound';
 import { AppShell } from './components/layout/AppShell';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -30,6 +32,8 @@ import { Reports } from './pages/Reports';
 import { Privacy } from './pages/Privacy';
 import { Settings } from './pages/Settings';
 import { Upgrade } from './pages/Upgrade';
+import { AddSupplier } from './pages/AddSupplier';
+import { SupplierDetail } from './pages/SupplierDetail';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -70,6 +74,12 @@ export default function App() {
             <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
             <Route path="/inventory/add" element={<ProtectedRoute><AddInventoryItem /></ProtectedRoute>} />
             <Route path="/inventory/:id" element={<ProtectedRoute><InventoryDetail /></ProtectedRoute>} />
+
+            <Route path="/suppliers" element={<ProtectedRoute><Suppliers /></ProtectedRoute>} />
+            <Route path="/suppliers/new" element={<ProtectedRoute><AddSupplier /></ProtectedRoute>} />
+            <Route path="/suppliers/:id" element={<ProtectedRoute><SupplierDetail /></ProtectedRoute>} />
+
+            <Route path="/add" element={<ProtectedRoute><QuickActions /></ProtectedRoute>} />
 
             <Route path="/ai" element={<ProtectedRoute><AIAssistant /></ProtectedRoute>} />
 

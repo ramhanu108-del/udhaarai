@@ -1,4 +1,4 @@
-import { useStore } from './useStore';
+import { useStore, computeSupplierBalance } from './useStore';
 import { Transaction, Customer, Sale, Invoice, InventoryItem, StockMovement } from '../types';
 
 export const getTransactions = (state: any = useStore.getState()) => {
@@ -19,14 +19,24 @@ export const getSalesSummary = (sales: Sale[]) => {
   let upiPaise = 0;
   let cardPaise = 0;
   let udhaarPaise = 0;
+  let advancePaise = 0;
   let profitPaise = 0;
 
   for (const sale of sales) {
     totalSalesPaise += sale.totalPaise;
-    if (sale.paymentMode === 'cash') cashPaise += sale.totalPaise;
-    if (sale.paymentMode === 'upi') upiPaise += sale.totalPaise;
-    if (sale.paymentMode === 'card') cardPaise += sale.totalPaise;
-    if (sale.paymentMode === 'udhaar') udhaarPaise += sale.totalPaise;
+    const advUsed = sale.advanceUsedPaise || 0;
+    const remaining = sale.totalPaise - advUsed;
+
+    advancePaise += advUsed;
+
+    if (sale.paymentMode === 'cash') cashPaise += remaining;
+    if (sale.paymentMode === 'upi') upiPaise += remaining;
+    if (sale.paymentMode === 'card') cardPaise += remaining;
+    if (sale.paymentMode === 'udhaar') udhaarPaise += remaining;
+    if (sale.paymentMode === 'advance' && remaining <= 0) {
+        // Fully paid by advance, no additional remainder to add to modes
+    }
+    
     if (sale.profitPaise) profitPaise += sale.profitPaise;
   }
 
@@ -36,6 +46,7 @@ export const getSalesSummary = (sales: Sale[]) => {
     upiPaise,
     cardPaise,
     udhaarPaise,
+    advancePaise,
     profitPaise,
     saleCount: sales.length,
   };
@@ -55,7 +66,7 @@ export const getTodaySalesSummary = (state: any = useStore.getState()) => {
 export const getCustomerBalance = (customerId: string, state: any = useStore.getState()) => {
   const txs = getTransactions(state).filter((tx: Transaction) => tx.customerId === customerId);
   return txs.reduce((sum: number, tx: Transaction) => {
-    if (tx.type === 'udhaar' || tx.type === 'sale_credit') {
+    if (tx.type === 'udhaar' || tx.type === 'sale_credit' || tx.type === 'advance_adjustment') {
       return sum + tx.amount;
     } else if (tx.type === 'payment' || tx.type === 'refund' || tx.type === 'adjustment') {
       return sum - tx.amount;
@@ -70,13 +81,29 @@ export const getTotalPending = (state: any = useStore.getState()) => {
   const balances: Record<string, number> = {};
   for (const tx of activeTxs) {
     if (!balances[tx.customerId]) balances[tx.customerId] = 0;
-    if (tx.type === 'udhaar' || tx.type === 'sale_credit') balances[tx.customerId] += tx.amount;
+    if (tx.type === 'udhaar' || tx.type === 'sale_credit' || tx.type === 'advance_adjustment') balances[tx.customerId] += tx.amount;
     else if (tx.type === 'payment' || tx.type === 'refund' || tx.type === 'adjustment') balances[tx.customerId] -= tx.amount;
   }
   
   let total = 0;
   for (const bal of Object.values(balances)) {
     if (bal > 0) total += bal;
+  }
+  return total;
+};
+
+export const getTotalCustomerAdvance = (state: any = useStore.getState()) => {
+  const activeTxs = getTransactions(state);
+  const balances: Record<string, number> = {};
+  for (const tx of activeTxs) {
+    if (!balances[tx.customerId]) balances[tx.customerId] = 0;
+    if (tx.type === 'udhaar' || tx.type === 'sale_credit' || tx.type === 'advance_adjustment') balances[tx.customerId] += tx.amount;
+    else if (tx.type === 'payment' || tx.type === 'refund' || tx.type === 'adjustment') balances[tx.customerId] -= tx.amount;
+  }
+  
+  let total = 0;
+  for (const bal of Object.values(balances)) {
+    if (bal < 0) total += Math.abs(bal);
   }
   return total;
 };
@@ -88,7 +115,7 @@ export const getCustomerLedger = (customerId: string, state: any = useStore.getS
     
   let runningBalance = 0;
   return txs.map((tx: Transaction) => {
-    if (tx.type === 'udhaar' || tx.type === 'sale_credit') runningBalance += tx.amount;
+    if (tx.type === 'udhaar' || tx.type === 'sale_credit' || tx.type === 'advance_adjustment') runningBalance += tx.amount;
     else if (tx.type === 'payment' || tx.type === 'refund' || tx.type === 'adjustment') runningBalance -= tx.amount;
     
     return {
@@ -117,7 +144,7 @@ export const getOverdueCustomers = (state: any = useStore.getState()) => {
   
   for (const tx of getTransactions(state)) {
     if (!balances[tx.customerId]) balances[tx.customerId] = 0;
-    if (tx.type === 'udhaar' || tx.type === 'sale_credit') {
+    if (tx.type === 'udhaar' || tx.type === 'sale_credit' || tx.type === 'advance_adjustment') {
       balances[tx.customerId] += tx.amount;
       if (tx.dueDate) {
         const dueTime = typeof tx.dueDate === 'number' ? tx.dueDate : new Date(tx.dueDate).setHours(23, 59, 59, 999);
@@ -131,6 +158,30 @@ export const getOverdueCustomers = (state: any = useStore.getState()) => {
   
   const overdueCustomerIds = Object.keys(balances).filter(id => balances[id] > 0 && hasOverdueTx[id]);
   return state.customers.filter((c: Customer) => overdueCustomerIds.includes(c.id));
+};
+
+export const getTotalSupplierPayable = (state: any = useStore.getState()) => {
+  const supplierTransactions = state.supplierTransactions || [];
+  const supplierIds = Array.from(new Set(supplierTransactions.map((tx: any) => tx.supplierId)));
+  
+  let totalPayablePaise = 0;
+  for (const sId of supplierIds as string[]) {
+    const balance = computeSupplierBalance(supplierTransactions, sId);
+    if (balance > 0) totalPayablePaise += balance;
+  }
+  return totalPayablePaise;
+};
+
+export const getTotalSupplierAdvance = (state: any = useStore.getState()) => {
+  const supplierTransactions = state.supplierTransactions || [];
+  const supplierIds = Array.from(new Set(supplierTransactions.map((tx: any) => tx.supplierId)));
+  
+  let totalAdvancePaise = 0;
+  for (const sId of supplierIds as string[]) {
+    const balance = computeSupplierBalance(supplierTransactions, sId);
+    if (balance < 0) totalAdvancePaise += Math.abs(balance);
+  }
+  return totalAdvancePaise;
 };
 
 export const getInvoices = (state: any = useStore.getState()) => {

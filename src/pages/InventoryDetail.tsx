@@ -136,11 +136,16 @@ export const InventoryDetail = () => {
                        if (e.key === '-' || e.key === 'e' || e.key === 'E') {
                          e.preventDefault();
                        }
+                       if (!isDecimalAllowedForUnit(item.unit)) {
+                         if (e.key === '.') {
+                           e.preventDefault();
+                         }
+                       }
                      }}
                      className="bg-slate-50 border-slate-200"
                    />
                    <p className="text-[10px] text-slate-500 font-semibold mt-1">
-                     {isDecimalAllowedForUnit(item.unit) ? 'Decimal allowed. ' : 'Whole number only. '}
+                     {isDecimalAllowedForUnit(item.unit) ? 'Decimal allowed up to 3 places. ' : 'Whole number only. '}
                      Positive number daalein. Add/Reduce/Correct ka action button stock ka direction decide karega.
                    </p>
                 </div>

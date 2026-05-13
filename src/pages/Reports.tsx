@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { ArrowLeft, TrendingUp, IndianRupee, PackageOpen, Users, Receipt, Copy, Check, Share2, ClipboardList, FileDown } from 'lucide-react';
 import { format, subMonths, startOfMonth } from 'date-fns';
-import { generateWhatsAppLink } from '../utils';
+import { generateWhatsAppLink, formatCurrency } from '../utils';
 import { generateMonthlyPdfReport } from '../utils/pdfReports';
 
 export const Reports = () => {
   const navigate = useNavigate();
   const storeState = useStore();
-  const { user, sales, invoices, customers, inventory, transactions } = storeState;
+  const { user, sales, invoices, customers, inventory, transactions, suppliers, supplierTransactions } = storeState;
   const [copiedSummary, setCopiedSummary] = useState(false);
   const [pdfGenerating, setPdfGenerating] = useState(false);
   const [pdfError, setPdfError] = useState('');
@@ -19,6 +19,15 @@ export const Reports = () => {
 
   // Quick stats
   const totalPendingUdhaar = customers.reduce((sum, c) => sum + (c.totalPending || 0), 0);
+  const totalPayableSuppliers = (suppliers || []).reduce((sum, s) => {
+    const bal = (supplierTransactions || []).filter(t => t.supplierId === s.id && t.status === 'active').reduce((s_acc, t) => {
+      if (t.type === 'purchase_credit') return s_acc + t.amountPaise;
+      if (t.type === 'supplier_payment') return s_acc - t.amountPaise;
+      if (t.type === 'adjustment') return s_acc + t.amountPaise;
+      return s_acc;
+    }, 0);
+    return sum + (bal > 0 ? bal : 0);
+  }, 0);
   
   const todaysSales = sales.filter(s => s.createdAt >= today.getTime());
   const todaysSalesTotal = todaysSales.reduce((sum, s) => sum + s.totalPaise, 0);
@@ -44,24 +53,25 @@ export const Reports = () => {
     .filter(c => (c.totalPending || 0) > 0)
     .slice(0, 5);
 
-  const pendingAmountStr = `₹${(totalPendingUdhaar / 100).toFixed(0)}`;
+  const pendingAmountStr = formatCurrency(totalPendingUdhaar);
 
   const generateSummaryText = () => {
     let text = `*--- Aaj Ka Closing Summary ---*\n`;
-    text += `Shop: ${user?.businessName || 'SmartUdhaar AI'}\n`;
+    text += `Shop: ${user?.businessName || 'SmartUdhaar Store'}\n`;
     text += `Date: ${format(new Date(), 'dd MMM yyyy')}\n\n`;
     
     text += `*Sales & Collection*\n`;
-    text += `Aaj ki Sales: ₹${(todaysSalesTotal / 100).toFixed(0)}\n`;
-    text += `Cash Sales: ₹${(cashSalesTotal / 100).toFixed(0)}\n`;
-    text += `UPI Sales: ₹${(upiSalesTotal / 100).toFixed(0)}\n`;
-    text += `Card Sales: ₹${(cardSalesTotal / 100).toFixed(0)}\n`;
-    text += `Aaj Received Payment: ₹${(todaysCollection / 100).toFixed(0)}\n`;
-    text += `Net Cash/Collection: ₹${(netCollection / 100).toFixed(0)}\n\n`;
+    text += `Aaj ki Sales: ${formatCurrency(todaysSalesTotal)}\n`;
+    text += `Cash Sales: ${formatCurrency(cashSalesTotal)}\n`;
+    text += `UPI Sales: ${formatCurrency(upiSalesTotal)}\n`;
+    text += `Card Sales: ${formatCurrency(cardSalesTotal)}\n`;
+    text += `Aaj Received Payment: ${formatCurrency(todaysCollection)}\n`;
+    text += `Net Cash/Collection: ${formatCurrency(netCollection)}\n\n`;
     
     text += `*Udhaar Status*\n`;
-    text += `Aaj Diya Gaya Udhaar: ₹${(todaysUdhaarTotal / 100).toFixed(0)}\n`;
-    text += `Total Pending Market mein: ₹${(totalPendingUdhaar / 100).toFixed(0)}\n\n`;
+    text += `Aaj Diya Gaya Udhaar: ${formatCurrency(todaysUdhaarTotal)}\n`;
+    text += `Total Pending Market mein: ${formatCurrency(totalPendingUdhaar)}\n`;
+    text += `Total Payable (Suppliers): ${formatCurrency(totalPayableSuppliers)}\n\n`;
     
     text += `*Alerts*\n`;
     text += `Low Stock Items: ${lowStockItems.length}\n`;
@@ -69,7 +79,7 @@ export const Reports = () => {
     if (topUdhaarCustomers.length > 0) {
        text += `\n*Top 3 Pending Customers*\n`;
        topUdhaarCustomers.slice(0,3).forEach((c, i) => {
-          text += `${i+1}. ${c.name} - ₹${(c.totalPending / 100).toFixed(0)}\n`;
+          text += `${i+1}. ${c.name} - ${formatCurrency(c.totalPending)}\n`;
        });
     }
     
@@ -130,14 +140,14 @@ export const Reports = () => {
                 <TrendingUp className="w-4 h-4" />
              </div>
              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Aaj ki Sale</p>
-             <p className="text-lg font-black text-slate-900">₹{(todaysSalesTotal / 100).toFixed(0)}</p>
+             <p className="text-lg font-black text-slate-900">{formatCurrency(todaysSalesTotal)}</p>
           </div>
           <div className="bg-white p-4 rounded-2xl border border-slate-200">
              <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-3">
                 <IndianRupee className="w-4 h-4" />
              </div>
              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Aaj Collection</p>
-             <p className="text-lg font-black text-slate-900">₹{(todaysCollection / 100).toFixed(0)}</p>
+             <p className="text-lg font-black text-slate-900">{formatCurrency(todaysCollection)}</p>
           </div>
         </div>
 
@@ -151,29 +161,29 @@ export const Reports = () => {
           <div className="p-4 space-y-3">
             <div className="grid grid-cols-2 gap-y-2 text-sm">
               <p className="text-slate-500">Total Sales:</p>
-              <p className="font-bold text-slate-900 text-right">₹{(todaysSalesTotal / 100).toFixed(0)}</p>
+              <p className="font-bold text-slate-900 text-right">{formatCurrency(todaysSalesTotal)}</p>
               
               <p className="text-slate-500 pl-2">- Cash Sales:</p>
-              <p className="font-medium text-slate-700 text-right">₹{(cashSalesTotal / 100).toFixed(0)}</p>
+              <p className="font-medium text-slate-700 text-right">{formatCurrency(cashSalesTotal)}</p>
               
               <p className="text-slate-500 pl-2">- UPI Sales:</p>
-              <p className="font-medium text-slate-700 text-right">₹{(upiSalesTotal / 100).toFixed(0)}</p>
+              <p className="font-medium text-slate-700 text-right">{formatCurrency(upiSalesTotal)}</p>
               
               <p className="text-slate-500 pl-2">- Card Sales:</p>
-              <p className="font-medium text-slate-700 text-right">₹{(cardSalesTotal / 100).toFixed(0)}</p>
+              <p className="font-medium text-slate-700 text-right">{formatCurrency(cardSalesTotal)}</p>
               
               <div className="col-span-2 border-t border-slate-100 my-1"></div>
               
               <p className="text-slate-500">Udhaar Diya:</p>
-              <p className="font-bold text-slate-900 text-right">₹{(todaysUdhaarTotal / 100).toFixed(0)}</p>
+              <p className="font-bold text-slate-900 text-right">{formatCurrency(todaysUdhaarTotal)}</p>
               
               <p className="text-slate-500">Payment Aaya:</p>
-              <p className="font-bold text-slate-900 text-right">₹{(todaysCollection / 100).toFixed(0)}</p>
+              <p className="font-bold text-slate-900 text-right">{formatCurrency(todaysCollection)}</p>
               
               <div className="col-span-2 border-t border-slate-100 my-1"></div>
               
               <p className="text-slate-900 font-bold">Net Cash/Collection:</p>
-              <p className="font-black text-emerald-600 text-right">₹{(netCollection / 100).toFixed(0)}</p>
+              <p className="font-black text-emerald-600 text-right">{formatCurrency(netCollection)}</p>
             </div>
             
             <div className="pt-3 flex gap-3">
@@ -189,14 +199,27 @@ export const Reports = () => {
         </div>
 
         {/* Overall Pending */}
-        <div className="bg-orange-50 p-5 rounded-2xl border border-orange-100">
-          <div className="flex justify-between items-start">
-             <div>
-                <p className="text-xs font-bold text-orange-900 mb-1 flex items-center gap-2">
-                   <Users className="w-4 h-4" /> Total Pending Udhaar
-                </p>
-                <p className="text-3xl font-black text-orange-700">{pendingAmountStr}</p>
-             </div>
+        <div className="grid grid-cols-1 gap-4">
+          <div className="bg-orange-50 p-5 rounded-2xl border border-orange-100">
+            <div className="flex justify-between items-start">
+               <div>
+                  <p className="text-xs font-bold text-orange-900 mb-1 flex items-center gap-2">
+                     <Users className="w-4 h-4" /> Total Pending Udhaar (LENA)
+                  </p>
+                  <p className="text-3xl font-black text-orange-700">{pendingAmountStr}</p>
+               </div>
+            </div>
+          </div>
+          
+          <div className="bg-amber-50 p-5 rounded-2xl border border-amber-100">
+            <div className="flex justify-between items-start">
+               <div>
+                  <p className="text-xs font-bold text-amber-900 mb-1 flex items-center gap-2">
+                     <PackageOpen className="w-4 h-4" /> Total Payable (DENA)
+                  </p>
+                  <p className="text-3xl font-black text-amber-700">{formatCurrency(totalPayableSuppliers)}</p>
+               </div>
+            </div>
           </div>
         </div>
 
@@ -279,7 +302,7 @@ export const Reports = () => {
                        <p className="text-sm font-bold text-slate-900">{c.name}</p>
                        <p className="text-xs text-slate-500">{c.phone}</p>
                     </div>
-                    <p className="text-sm font-bold text-red-600">₹{(c.totalPending / 100).toFixed(0)}</p>
+                    <p className="text-sm font-bold text-red-600">{formatCurrency(c.totalPending)}</p>
                  </div>
                ))}
              </div>

@@ -39,6 +39,7 @@ export const AddTransaction = () => {
     type: initialType as "udhaar" | "payment",
     paymentMode: "cash" as "cash" | "upi" | "card",
     dueDate: "",
+    useAdvance: true,
   });
 
   const [udhaarMode, setUdhaarMode] = useState<"manual" | "inventory">(
@@ -95,6 +96,15 @@ export const AddTransaction = () => {
   const currentCustomerBalance = selectedCustomer
     ? getCustomerBalance(selectedCustomer)
     : 0;
+
+  const advanceAvailablePaise = currentCustomerBalance < 0 ? Math.abs(currentCustomerBalance) : 0;
+  const advanceAvailable = advanceAvailablePaise / 100;
+  
+  const parsedAmount = parseFloat(formData.amount) || 0;
+  const amountPaise = Math.round(parsedAmount * 100);
+  const advanceUsedPaise = (isUdhaar && formData.useAdvance) ? Math.min(advanceAvailablePaise, amountPaise) : 0;
+  const advanceUsed = advanceUsedPaise / 100;
+  const remainingUdhaar = Math.max(0, parsedAmount - advanceUsed);
 
   useEffect(() => {
     if (!isUdhaar && paymentModeRef === "udhaar" && selectedUdhaarId) {
@@ -186,6 +196,9 @@ export const AddTransaction = () => {
     const amountInPaise = Math.round(parsedAmount * 100);
     const generateId = () => Math.random().toString(36).substring(2, 15);
 
+    const finalAdvanceUsedPaise = (isUdhaar && formData.useAdvance) ? Math.min(advanceAvailablePaise, amountInPaise) : 0;
+    const finalRemainingUdhaarPaise = amountInPaise - finalAdvanceUsedPaise;
+
     // For payment against udhaar, extract reference inventory id if it was an inventory udhaar
     const paymentLinkedInventoryId =
       !isUdhaar &&
@@ -195,7 +208,20 @@ export const AddTransaction = () => {
         : undefined;
 
     let saleId: string | undefined;
-    const txId = generateId();
+    const mainTxId = generateId();
+
+    // 1. Advance Adjustment Transaction
+    if (finalAdvanceUsedPaise > 0) {
+      addTransaction({
+        id: generateId(),
+        userId: user?.id || "unknown",
+        customerId: selectedCustomer,
+        type: "advance_adjustment",
+        amount: finalAdvanceUsedPaise,
+        description: `Advance adjusted against Udhaar: ${formData.description || (isInventoryMode ? selectedItem?.name : "Udhaar")}`,
+        linkedSaleId: isInventoryMode ? "will-be-linked" : undefined, // Update later if needed
+      });
+    }
 
     if (isInventoryMode && selectedInventoryId && selectedItem) {
       saleId = generateId();
@@ -228,38 +254,42 @@ export const AddTransaction = () => {
         discountPaise: 0,
         totalPaise: amountInPaise,
         profitPaise: profitPaise,
-        paymentMode: "udhaar",
-        linkedTransactionId: txId,
+        paymentMode: finalRemainingUdhaarPaise === 0 ? "advance" : "udhaar",
+        advanceUsedPaise: finalAdvanceUsedPaise,
+        linkedTransactionId: mainTxId,
       });
     }
 
-    addTransaction({
-      id: txId,
-      userId: user?.id || "unknown",
-      customerId: selectedCustomer,
-      type: isInventoryMode ? "sale_credit" : formData.type,
-      amount: amountInPaise,
-      description:
-        formData.description ||
-        (isUdhaar
-          ? isInventoryMode
-            ? "Inventory se Udhaar"
-            : "Given Udhaar"
-          : "Received Payment"),
-      paymentMode: isUdhaar ? undefined : formData.paymentMode,
-      inventoryItemId: isInventoryMode
-        ? selectedInventoryId
-        : paymentLinkedInventoryId,
-      stockReducedQty: isInventoryMode ? parseFloat(inventoryQty) : undefined,
-      linkedUdhaarTransactionId:
-        !isUdhaar &&
-        paymentModeRef === "udhaar" &&
-        selectedUdhaarId !== "general"
-          ? selectedUdhaarId
-          : undefined,
-      linkedSaleId: saleId,
-      dueDate: isUdhaar && formData.dueDate ? formData.dueDate : undefined,
-    });
+    // 2. Main Udhaar Transaction (only if remaining > 0)
+    if (finalRemainingUdhaarPaise > 0 || !isUdhaar) {
+      addTransaction({
+        id: mainTxId,
+        userId: user?.id || "unknown",
+        customerId: selectedCustomer,
+        type: isInventoryMode ? "sale_credit" : formData.type,
+        amount: isUdhaar ? finalRemainingUdhaarPaise : amountInPaise,
+        description:
+          formData.description ||
+          (isUdhaar
+            ? isInventoryMode
+              ? "Inventory se Udhaar"
+              : "Given Udhaar"
+            : "Received Payment"),
+        paymentMode: isUdhaar ? undefined : formData.paymentMode,
+        inventoryItemId: isInventoryMode
+          ? selectedInventoryId
+          : paymentLinkedInventoryId,
+        stockReducedQty: isInventoryMode ? parseFloat(inventoryQty) : undefined,
+        linkedUdhaarTransactionId:
+          !isUdhaar &&
+          paymentModeRef === "udhaar" &&
+          selectedUdhaarId !== "general"
+            ? selectedUdhaarId
+            : undefined,
+        linkedSaleId: saleId,
+        dueDate: isUdhaar && formData.dueDate ? formData.dueDate : undefined,
+      });
+    }
 
     navigate(-1);
   };
@@ -458,12 +488,26 @@ export const AddTransaction = () => {
                       }
                       className="h-12 bg-white border-indigo-200 font-bold"
                       value={inventoryQty}
-                      onChange={(e) => setInventoryQty(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                          e.preventDefault();
+                        }
+                        if (!selectedItem || !isDecimalAllowedForUnit(selectedItem.unit)) {
+                          if (e.key === '.') {
+                            e.preventDefault();
+                          }
+                        }
+                      }}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val.includes('-')) return;
+                        setInventoryQty(val);
+                      }}
                       required={isInventoryMode}
                     />
                     <p className="text-[10px] text-slate-500 mt-1">
                       {isDecimalAllowedForUnit(selectedItem.unit)
-                        ? "Decimal allowed"
+                        ? "Decimal allowed up to 3 places"
                         : "Whole number only"}
                     </p>
                   </div>
@@ -473,6 +517,46 @@ export const AddTransaction = () => {
                 Inventory se udhaar dene par stock auto kam hoga aur customer ke
                 pending balance mein amount add hoga.
               </p>
+            </div>
+          )}
+
+          {/* Advance Adjustment Toggle */}
+          {isUdhaar && advanceAvailable > 0 && (
+            <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 space-y-3">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h4 className="text-[10px] font-bold text-indigo-900 uppercase tracking-wider">
+                    Customer Advance Available
+                  </h4>
+                  <p className="text-sm font-bold text-indigo-700">
+                    ₹{advanceAvailable.toFixed(2)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase">
+                    Use Advance?
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData((p) => ({ ...p, useAdvance: !p.useAdvance }))
+                    }
+                    className={`w-10 h-5 rounded-full transition-colors relative ${formData.useAdvance ? "bg-indigo-600" : "bg-slate-300"}`}
+                  >
+                    <div
+                      className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-transform ${formData.useAdvance ? "left-6" : "left-1"}`}
+                    ></div>
+                  </button>
+                </div>
+              </div>
+              {formData.useAdvance && parsedAmount > 0 && (
+                <div className="pt-2 border-t border-indigo-100 flex justify-between items-center text-[10px] font-bold text-indigo-600 italic">
+                  <span>
+                    Iss udhaar mein ₹{advanceUsed.toFixed(2)} adjust hoga.
+                  </span>
+                  <span>New Due: ₹{remainingUdhaar.toFixed(2)}</span>
+                </div>
+              )}
             </div>
           )}
 

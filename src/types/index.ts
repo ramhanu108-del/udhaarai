@@ -1,8 +1,8 @@
 export type Language = 'en' | 'hi' | 'hinglish';
 export type BusinessType = 'kirana' | 'salon' | 'mobile_repair' | 'garments' | 'coaching' | 'wholesale' | 'other';
 export type RiskStatus = 'Low' | 'Medium' | 'High';
-export type TransactionType = 'udhaar' | 'payment' | 'sale_credit' | 'adjustment' | 'refund';
-export type PaymentMode = 'cash' | 'upi' | 'card' | 'udhaar' | 'unpaid';
+export type TransactionType = 'udhaar' | 'payment' | 'sale_credit' | 'adjustment' | 'refund' | 'advance_adjustment';
+export type PaymentMode = 'cash' | 'upi' | 'card' | 'udhaar' | 'unpaid' | 'advance';
 export type TransactionStatus = 'active' | 'archived' | 'void';
 export type InvoiceStatus = 'paid' | 'unpaid' | 'partial' | 'void';
 export type InventoryUnit = 'pcs' | 'kg' | 'g' | 'l' | 'ml' | 'packet' | 'box' | 'other';
@@ -86,6 +86,7 @@ export interface Sale {
   costTotalPaise?: number;
   profitPaise?: number;
   paymentMode: PaymentMode;
+  advanceUsedPaise?: number;
   linkedTransactionId?: string;
   note?: string;
   status: TransactionStatus;
@@ -147,9 +148,48 @@ export interface StockMovement {
   inventoryItemId: string;
   type: StockMovementType;
   qtyChange: number;
+  oldStock?: number;
+  newStock?: number;
+  unitCostPaise?: number;
+  totalAmountPaise?: number;
+  supplierId?: string;
   reason?: string;
   linkedSaleId?: string;
   linkedTransactionId?: string;
   createdAt: number;
   isDemo?: boolean;
+}
+
+export type SupplierTransactionType = 'purchase_credit' | 'supplier_payment' | 'adjustment' | 'supplier_advance_adjustment';
+
+export interface Supplier {
+  id: string;
+  userId: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  notes?: string;
+  createdAt: number;
+  status: 'active' | 'archived';
+}
+
+export interface SupplierTransaction {
+  id: string;
+  userId: string;
+  supplierId: string;
+  type: SupplierTransactionType;
+  amountPaise: number;
+  paymentMode?: PaymentMode;
+  notes?: string;
+  date: string;
+  status: TransactionStatus;
+  inventoryItemId?: string;
+  purchaseName?: string;
+  quantity?: number;
+  unit?: string;
+  unitPricePaise?: number;
+  linkedReferenceId?: string;
+  createdAt: number;
+  updatedAt: number;
 }

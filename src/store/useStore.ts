@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { User, Customer, Transaction, Sale, Invoice, InventoryItem, StockMovement, StockMovementType, SyncStatus, SyncQueueItem, SyncOperation } from '../types';
+import { User, Customer, Transaction, Sale, Invoice, InventoryItem, StockMovement, StockMovementType, SyncStatus, SyncQueueItem, SyncOperation, Supplier, SupplierTransaction, SupplierTransactionType } from '../types';
 import { sanitizeQuantityByUnit } from '../utils/quantity';
 
 export interface AppState {
@@ -17,6 +17,8 @@ export interface AppState {
   invoices: Invoice[];
   inventory: InventoryItem[];
   stockMovements: StockMovement[];
+  suppliers: Supplier[];
+  supplierTransactions: SupplierTransaction[];
   lastBackupAt?: number;
   lastRestoreAt?: number;
   lastExportAt?: number;
@@ -44,7 +46,20 @@ export interface AppState {
   addInventoryItem: (item: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => string;
   updateInventoryItem: (id: string, updates: Partial<InventoryItem>) => void;
   archiveInventoryItem: (id: string) => void;
-  adjustStock: (id: string, deltaQty: number, reason: string | undefined, type: StockMovementType, linkedSaleId?: string) => void;
+  adjustStock: (
+    id: string, 
+    deltaQty: number, 
+    reason: string | undefined, 
+    type: StockMovementType, 
+    linkedSaleId?: string,
+    extra?: { supplierId?: string, unitCostPaise?: number, totalAmountPaise?: number }
+  ) => void;
+  
+  addSupplier: (supplier: Omit<Supplier, 'id' | 'createdAt' | 'status'>) => void;
+  updateSupplier: (id: string, updates: Partial<Supplier>) => void;
+  addSupplierTransaction: (tx: Omit<SupplierTransaction, 'id' | 'createdAt' | 'updatedAt' | 'status'>) => string;
+  voidSupplierTransaction: (id: string) => { ok: boolean, message: string };
+
   updateBackupMeta: (meta: { lastBackupAt?: number; lastRestoreAt?: number; lastExportAt?: number; }) => void;
   restoreData: (data: any) => void;
   resetAll: () => void;
@@ -70,8 +85,19 @@ export const computeCustomerBalance = (transactions: Transaction[], customerId: 
   return transactions
     .filter(tx => tx.customerId === customerId && tx.status === 'active')
     .reduce((sum, tx) => {
-      if (tx.type === 'udhaar' || tx.type === 'sale_credit') return sum + tx.amount;
+      if (tx.type === 'udhaar' || tx.type === 'sale_credit' || tx.type === 'advance_adjustment') return sum + tx.amount;
       if (tx.type === 'payment' || tx.type === 'adjustment' || tx.type === 'refund') return sum - tx.amount;
+      return sum;
+    }, 0);
+};
+
+export const computeSupplierBalance = (transactions: SupplierTransaction[], supplierId: string) => {
+  return (transactions || [])
+    .filter(tx => tx.supplierId === supplierId && tx.status === 'active')
+    .reduce((sum, tx) => {
+      if (tx.type === 'purchase_credit') return sum + tx.amountPaise;
+      if (tx.type === 'supplier_payment') return sum - tx.amountPaise;
+      if (tx.type === 'adjustment' || tx.type === 'supplier_advance_adjustment') return sum + tx.amountPaise; 
       return sum;
     }, 0);
 };
@@ -99,6 +125,8 @@ export const useStore = create<AppState>()(
       invoices: [],
       inventory: [],
       stockMovements: [],
+      suppliers: [],
+      supplierTransactions: [],
       lastBackupAt: undefined,
       lastRestoreAt: undefined,
       lastExportAt: undefined,
@@ -352,25 +380,28 @@ export const useStore = create<AppState>()(
           let updatedTransactions = state.transactions ? [...state.transactions] : [];
           let updatedCustomers = state.customers ? [...state.customers] : [];
 
-          if (sale.linkedTransactionId) {
-            const tx = updatedTransactions.find(t => t.id === sale.linkedTransactionId);
-            if (tx) {
-              updatedTransactions = updatedTransactions.map((t) =>
-                t.id === sale.linkedTransactionId
-                  ? { ...t, status: "void" as const, updatedAt: nowTime }
-                  : t
-              );
-              
-              // recompute customer balance
-              const newBalance = computeCustomerBalance(updatedTransactions, tx.customerId);
-              let riskStatus: 'Low' | 'Medium' | 'High' | undefined = 'Low';
-              if (newBalance > 1000000) riskStatus = 'High';
-              else if (newBalance > 200000) riskStatus = 'Medium';
-              
-              updatedCustomers = updatedCustomers.map(c => 
-                c.id === tx.customerId ? { ...c, totalPending: newBalance, riskStatus } : c
-              );
-            }
+          // Void all transactions linked to this sale (could be multiple if using advance adjustment)
+          const linkedTransactions = updatedTransactions.filter(t => t.linkedSaleId === saleId || (sale.linkedTransactionId && t.id === sale.linkedTransactionId));
+          
+          if (linkedTransactions.length > 0) {
+            updatedTransactions = updatedTransactions.map((t) =>
+              (t.linkedSaleId === saleId || (sale.linkedTransactionId && t.id === sale.linkedTransactionId))
+                ? { ...t, status: "void" as const, updatedAt: nowTime }
+                : t
+            );
+            
+            // Recompute balance for all affected customers
+            const affectedCustomerIds = new Set(linkedTransactions.map(t => t.customerId));
+            updatedCustomers = updatedCustomers.map(c => {
+               if (affectedCustomerIds.has(c.id)) {
+                  const newBalance = computeCustomerBalance(updatedTransactions, c.id);
+                  let riskStatus: 'Low' | 'Medium' | 'High' | undefined = 'Low';
+                  if (newBalance > 1000000) riskStatus = 'High';
+                  else if (newBalance > 200000) riskStatus = 'Medium';
+                  return { ...c, totalPending: newBalance, riskStatus };
+               }
+               return c;
+            });
           }
 
           let updatedInventory = state.inventory ? [...state.inventory] : [];
@@ -471,18 +502,18 @@ export const useStore = create<AppState>()(
         get().updateInventoryItem(id, { status: 'archived' });
       },
 
-      adjustStock: (id, deltaQty, reason, type, linkedSaleId) => {
+      adjustStock: (id, deltaQty, reason, type, linkedSaleId, extra) => {
         set((state) => {
           const inventory = state.inventory || [];
           const itemIndex = inventory.findIndex(i => i.id === id);
           if (itemIndex === -1) return state;
 
           const item = inventory[itemIndex];
-          const newStockQty = sanitizeQuantityByUnit(item.stockQty + deltaQty, item.unit);
+          const oldStock = item.stockQty;
+          const newStockQty = sanitizeQuantityByUnit(oldStock + deltaQty, item.unit);
           
           if (newStockQty < 0 && type !== 'adjustment') {
              // Let UI handle negative if adjustment, but sale should fail ideally. 
-             // We just log it here.
           }
 
           const updatedItem = { ...item, stockQty: newStockQty, updatedAt: Date.now() };
@@ -495,8 +526,11 @@ export const useStore = create<AppState>()(
             inventoryItemId: id,
             type,
             qtyChange: deltaQty,
+            oldStock,
+            newStock: newStockQty,
             reason,
             linkedSaleId,
+            ...extra,
             createdAt: Date.now()
           };
 
@@ -515,6 +549,122 @@ export const useStore = create<AppState>()(
         }
       },
 
+      addSupplier: (supplierData) => {
+        const newSupplier: Supplier = {
+          ...supplierData,
+          id: generateId(),
+          createdAt: Date.now(),
+          status: 'active',
+        };
+        set((state) => ({ suppliers: [...(state.suppliers || []), newSupplier] }));
+        if (get().authUser) get().queueSyncAction('suppliers', 'insert', newSupplier);
+      },
+
+      updateSupplier: (id, updates) => {
+        set((state) => ({
+          suppliers: (state.suppliers || []).map((s) => (s.id === id ? { ...s, ...updates } : s)),
+        }));
+        const updated = get().suppliers.find(s => s.id === id);
+        if (get().authUser && updated) get().queueSyncAction('suppliers', 'update', updated);
+      },
+
+      addSupplierTransaction: (txData) => {
+        const id = generateId();
+        const now = Date.now();
+        const newTx: SupplierTransaction = {
+          ...txData,
+          id,
+          createdAt: now,
+          updatedAt: now,
+          status: 'active',
+        };
+
+        set((state) => ({
+          supplierTransactions: [...(state.supplierTransactions || []), newTx],
+        }));
+
+        // Handle inventory link if present and it's a purchase
+        if (newTx.type === 'purchase_credit' && newTx.inventoryItemId && newTx.notes?.includes('Qty:')) {
+          // Note: The caller should handle the actual stock adjustment call for better control, 
+          // or we can parse notes. The user request says: "If inventory item link is selected: Ask quantity, Increase inventory stock"
+          // I'll assume the UI calls adjustStock separately or we do it here.
+          // Let's keep it simple and assume UI calls both.
+        }
+
+        if (get().authUser) get().queueSyncAction('supplier_transactions', 'insert', newTx);
+        return id;
+      },
+
+      voidSupplierTransaction: (id) => {
+        const now = Date.now();
+        const state = get();
+        const tx = (state.supplierTransactions || []).find(t => t.id === id);
+        if (!tx) return { ok: false, message: "Transaction not found" };
+        if (tx.status === 'void') return { ok: false, message: "Already void" };
+
+        let updatedInventory = state.inventory ? [...state.inventory] : [];
+        let stockMovements = state.stockMovements ? [...state.stockMovements] : [];
+
+        // Identify all transactions to void (self + linked)
+        const linkedRefId = tx.linkedReferenceId;
+        const txIdsToVoid = linkedRefId 
+          ? state.supplierTransactions.filter(t => t.linkedReferenceId === linkedRefId).map(t => t.id)
+          : [id];
+
+        // Stock reverse logic
+        // If any of the voiding transactions was a purchase with inventory, reverse it
+        const affectedTxs = state.supplierTransactions.filter(t => 
+           txIdsToVoid.includes(t.id) && t.status === 'active'
+        );
+
+        for (const vtx of affectedTxs) {
+          if (vtx.type === 'purchase_credit' && vtx.inventoryItemId && vtx.quantity) {
+             const item = updatedInventory.find(i => i.id === vtx.inventoryItemId);
+             if (item) {
+                updatedInventory = updatedInventory.map(inv => 
+                   inv.id === item.id ? { ...inv, stockQty: sanitizeQuantityByUnit(inv.stockQty - vtx.quantity!, inv.unit), updatedAt: now } : inv
+                );
+                stockMovements.push({
+                   id: generateId(),
+                   inventoryItemId: item.id,
+                   type: 'void_restore',
+                   qtyChange: -vtx.quantity,
+                   reason: `Void Purchase: ${vtx.purchaseName || 'Item'}`,
+                   linkedTransactionId: vtx.id,
+                   createdAt: now
+                });
+             }
+          }
+        }
+
+        const updatedTxs = (state.supplierTransactions || []).map(t => 
+          txIdsToVoid.includes(t.id) ? { ...t, status: 'void' as const, updatedAt: now } : t
+        );
+
+        set({
+          supplierTransactions: updatedTxs,
+          inventory: updatedInventory,
+          stockMovements
+        });
+
+        // Sync updates
+        if (state.authUser) {
+           txIdsToVoid.forEach(vid => {
+              const updated = updatedTxs.find(t => t.id === vid);
+              if (updated) get().queueSyncAction('supplier_transactions', 'update', updated);
+           });
+           // Sync inventory too if changed
+           // (Simple approach: queue sync for all inventory items that were updated)
+           const updatedInvIds = new Set(affectedTxs.filter(t => t.inventoryItemId).map(t => t.inventoryItemId!));
+           updatedInvIds.forEach(iid => {
+              const invItem = updatedInventory.find(i => i.id === iid);
+              if (invItem) get().queueSyncAction('inventory_items', 'update', invItem);
+           });
+        }
+        
+        return { ok: true, message: "Voided successfully" };
+      },
+
       updateBackupMeta: (meta) => set((state) => ({ ...state, ...meta })),
       
       restoreData: (data) => set({
@@ -525,6 +675,8 @@ export const useStore = create<AppState>()(
         invoices: data.invoices || [],
         inventory: data.inventory || [],
         stockMovements: data.stockMovements || [],
+        suppliers: data.suppliers || [],
+        supplierTransactions: data.supplierTransactions || [],
         lastRestoreAt: Date.now(),
       }),
 
@@ -641,11 +793,23 @@ export const useStore = create<AppState>()(
           invoices: dedupeById(s.invoices || []),
           inventory: dedupeById(s.inventory || []),
           stockMovements: dedupeById(s.stockMovements || []),
+          suppliers: dedupeById(s.suppliers || []),
+          supplierTransactions: dedupeById(s.supplierTransactions || []),
         }));
         return { ok: true, message: 'Duplicates cleared.' };
       },
 
-      resetAll: () => set({ user: null, customers: [], transactions: [], sales: [], invoices: [], inventory: [], stockMovements: [] }),
+      resetAll: () => set({ 
+        user: null, 
+        customers: [], 
+        transactions: [], 
+        sales: [], 
+        invoices: [], 
+        inventory: [], 
+        stockMovements: [], 
+        suppliers: [], 
+        supplierTransactions: [] 
+      }),
     }),
     {
       name: 'smartudhaar-storage',

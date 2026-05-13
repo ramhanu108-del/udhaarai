@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useStore, computeCustomerBalance } from '../store/useStore';
+import { useStore, computeCustomerBalance, computeSupplierBalance } from '../store/useStore';
 import { 
   exportFullBackup, 
   validateBackup,
@@ -9,7 +9,9 @@ import {
   exportSalesCSV,
   exportInvoicesCSV,
   exportInventoryCSV,
-  exportStockMovementsCSV
+  exportStockMovementsCSV,
+  exportSuppliersCSV,
+  exportSupplierLedgerCSV
 } from '../utils/export';
 import { ArrowLeft, Download, Upload, CheckCircle, AlertTriangle, FileText, Info } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -72,7 +74,7 @@ export const Backup = () => {
     navigate('/audit');
   };
 
-  const handleCSVExport = (type: 'customers' | 'ledger' | 'sales' | 'invoices' | 'inventory' | 'movements') => {
+  const handleCSVExport = (type: 'customers' | 'ledger' | 'sales' | 'invoices' | 'inventory' | 'movements' | 'suppliers' | 'supplier_ledger') => {
     if (type === 'customers') {
       exportCustomersCSV(state.customers, (id) => computeCustomerBalance(state.transactions, id));
     } else if (type === 'ledger') {
@@ -85,6 +87,10 @@ export const Backup = () => {
       exportInventoryCSV(state.inventory || []);
     } else if (type === 'movements') {
       exportStockMovementsCSV(state.stockMovements || [], state.inventory || []);
+    } else if (type === 'suppliers') {
+      exportSuppliersCSV(state.suppliers || [], (id) => computeSupplierBalance(state.supplierTransactions || [], id));
+    } else if (type === 'supplier_ledger') {
+      exportSupplierLedgerCSV(state.supplierTransactions || [], state.suppliers || []);
     }
     state.updateBackupMeta({ lastExportAt: Date.now() });
   };
@@ -131,6 +137,14 @@ export const Backup = () => {
              <div>
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Inventory</p>
                 <p className="font-bold text-slate-800 text-lg">{state.inventory?.length || 0}</p>
+             </div>
+             <div>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Suppliers</p>
+                <p className="font-bold text-slate-800 text-lg">{state.suppliers?.length || 0}</p>
+             </div>
+             <div>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Supplier Tx</p>
+                <p className="font-bold text-slate-800 text-lg">{state.supplierTransactions?.length || 0}</p>
              </div>
           </div>
           <div className="pt-3 border-t border-slate-100">
@@ -201,6 +215,8 @@ export const Backup = () => {
                         <p>Ledger items: {validationResult.summary.transactions}</p>
                         <p>Sales: {validationResult.summary.sales}</p>
                         <p>Invoices: {validationResult.summary.invoices}</p>
+                        <p>Suppliers: {validationResult.summary.suppliers}</p>
+                        <p>Supplier Ledger: {validationResult.summary.supplierTransactions}</p>
                      </div>
                      <p className="text-[10px] text-red-600 font-bold mb-3 flex gap-1">
                         <AlertTriangle className="w-3 h-3 shrink-0" />
@@ -268,11 +284,25 @@ export const Backup = () => {
                  <Download className="w-4 h-4 text-slate-400" />
               </button>
               <button onClick={() => handleCSVExport('movements')} className="w-full flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:bg-slate-50 active:bg-slate-100 transition-colors">
-                 <div className="flex items-center gap-3">
-                    <FileText className="w-4 h-4 text-orange-600" />
-                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Stock Movements</span>
-                 </div>
-                 <Download className="w-4 h-4 text-slate-400" />
+                <div className="flex items-center gap-3">
+                  <FileText className="w-4 h-4 text-orange-600" />
+                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Stock Movements</span>
+                </div>
+                <Download className="w-4 h-4 text-slate-400" />
+              </button>
+              <button onClick={() => handleCSVExport('suppliers')} className="w-full flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:bg-slate-50 active:bg-slate-100 transition-colors">
+                <div className="flex items-center gap-3">
+                  <FileText className="w-4 h-4 text-amber-600" />
+                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Supplier List</span>
+                </div>
+                <Download className="w-4 h-4 text-slate-400" />
+              </button>
+              <button onClick={() => handleCSVExport('supplier_ledger')} className="w-full flex items-center justify-between p-3 rounded-xl border border-slate-200 hover:bg-slate-50 active:bg-slate-100 transition-colors">
+                <div className="flex items-center gap-3">
+                  <FileText className="w-4 h-4 text-amber-800" />
+                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Supplier Ledger</span>
+                </div>
+                <Download className="w-4 h-4 text-slate-400" />
               </button>
            </div>
         </section>

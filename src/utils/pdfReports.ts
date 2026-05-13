@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
-import { AppState } from '../store/useStore';
+import { AppState, computeSupplierBalance } from '../store/useStore';
 
 export const formatPdfCurrency = (amountInPaise: number): string => {
   if (amountInPaise == null || isNaN(amountInPaise) || !isFinite(amountInPaise)) return "Rs. 0";
@@ -14,7 +14,7 @@ export const formatPdfCurrency = (amountInPaise: number): string => {
 };
 
 export const buildMonthlyReportData = (monthStart: Date, monthEnd: Date, state: AppState) => {
-  const { user, sales, invoices, customers, inventory, transactions } = state;
+  const { user, sales, invoices, customers, inventory, transactions, suppliers, supplierTransactions } = state;
 
   const monthSales = sales.filter(s => 
     s.status === 'active' && 
@@ -86,6 +86,25 @@ export const buildMonthlyReportData = (monthStart: Date, monthEnd: Date, state: 
   const lowStockItems = inventory.filter(i => i.stockQty <= i.lowStockAlertQty);
   const unpaidInvoices = monthInvoices.filter(i => i.paymentStatus !== 'paid');
 
+  const monthSupplierTransactions = (supplierTransactions || []).filter(t => 
+    t.status === 'active' && 
+    isWithinInterval(new Date(t.createdAt), { start: monthStart, end: monthEnd })
+  );
+
+  let supplierPayments = 0;
+  let purchaseCredit = 0;
+  monthSupplierTransactions.forEach(t => {
+    if (t.type === 'supplier_payment') supplierPayments += t.amountPaise;
+    if (t.type === 'purchase_credit') purchaseCredit += t.amountPaise;
+  });
+
+  let totalPayable = 0;
+  const suppliersWithBalance = (suppliers || []).map(s => {
+    const bal = computeSupplierBalance(supplierTransactions || [], s.id);
+    if (bal > 0) totalPayable += bal;
+    return { ...s, balance: bal };
+  }).filter(s => s.balance !== 0).sort((a,b) => b.balance - a.balance);
+
   return {
     shopName: user?.businessName || 'SmartUdhaar AI',
     ownerName: user?.name || '',
@@ -107,11 +126,18 @@ export const buildMonthlyReportData = (monthStart: Date, monthEnd: Date, state: 
     udhaarGiven,
     totalPendingUdhaar,
 
+    supplierPayments,
+    purchaseCredit,
+    totalPayable,
+    suppliersCount: (suppliers || []).length,
+    monthSupplierTransactions,
+
     top10Customers,
     monthSales,
     lowStockItems,
     unpaidInvoices,
-    customers
+    customers,
+    suppliersWithBalance
   };
 };
 
@@ -167,6 +193,9 @@ export const generateMonthlyPdfReport = (monthStart: Date, appData: AppState) =>
       ['Payments Received', formatPdfCurrency(data.paymentReceived)],
       ['Total Udhaar Given', formatPdfCurrency(data.udhaarGiven)],
       ['Total Pending Udhaar (Overall)', formatPdfCurrency(data.totalPendingUdhaar)],
+      ['Payments to Suppliers (Month)', formatPdfCurrency(data.supplierPayments)],
+      ['New Purchase Credit (Month)', formatPdfCurrency(data.purchaseCredit)],
+      ['Total Payable to Suppliers', formatPdfCurrency(data.totalPayable)],
       ['Estimated Profit', formatPdfCurrency(data.profitEstimate)],
       ['Total Invoices', String(data.totalInvoices)],
       ['Unpaid Invoices', String(data.unpaidInvoicesCount)],
@@ -297,7 +326,59 @@ export const generateMonthlyPdfReport = (monthStart: Date, appData: AppState) =>
     yPos += 30;
   }
 
-  // --- FOOTER ---
+  // --- SUPPLIER TRANSACTIONS SECTION ---
+  if (data.monthSupplierTransactions.length > 0) {
+    doc.addPage();
+    yPos = 40;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Supplier Transactions (This Month)', 40, yPos);
+    yPos += 20;
+
+    autoTable(doc, {
+      startY: yPos,
+      theme: 'striped',
+      head: [['Date', 'Supplier', 'Type', 'Description', 'Qty/Price', 'Amount']],
+      body: data.monthSupplierTransactions.map(t => {
+        const supplier = (appData.suppliers || []).find(s => s.id === t.supplierId);
+        const qtyPrice = t.type === 'purchase_credit' && t.quantity 
+          ? `${t.quantity} ${t.unit} @ Rs. ${((t.unitPricePaise || 0) / 100).toFixed(2)}`
+          : '-';
+        return [
+          format(new Date(t.createdAt), 'dd MMM'),
+          supplier ? supplier.name : 'Unknown',
+          t.type === 'purchase_credit' ? 'Purchase' : 'Payment',
+          t.purchaseName || (t.type === 'supplier_payment' ? t.paymentMode : t.notes) || '-',
+          qtyPrice,
+          formatPdfCurrency(t.amountPaise)
+        ];
+      })
+    });
+  }
+
+  // --- SUPPLIERS SECTION ---
+  if (data.suppliersWithBalance.length > 0) {
+    doc.addPage();
+    yPos = 40;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Suppliers & Payables', 40, yPos);
+    yPos += 20;
+
+    autoTable(doc, {
+      startY: yPos,
+      theme: 'striped',
+      head: [['Supplier Name', 'Phone', 'Balance Status', 'Amount']],
+      body: data.suppliersWithBalance.map(s => [
+        s.name,
+        s.phone || 'N/A',
+        s.balance > 0 ? 'Payable' : 'Advance',
+        formatPdfCurrency(Math.abs(s.balance))
+      ])
+    });
+  }
+
+  // --- FOOTER (Applied to all pages) ---
   const pageCount = (doc as any).internal.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);

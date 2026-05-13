@@ -1,10 +1,27 @@
 import { InventoryUnit } from '../types';
 
-const COUNT_BASED_UNITS = ['pcs', 'piece', 'packet', 'box', 'bottle', 'unit', 'other'];
+const WHOLE_NUMBER_UNITS = [
+  'pcs', 'piece', 'pieces', 
+  'packet', 'packets', 
+  'box', 'boxes', 
+  'g', 'gram', 'grams', 
+  'ml', 'bottle', 'unit', 'other'
+];
+
+const DECIMAL_UNITS = [
+  'kg', 'kilogram', 'kilograms', 
+  'l', 'liter', 'litre', 'liters', 'litres'
+];
 
 export function isDecimalAllowedForUnit(unit: string | InventoryUnit): boolean {
   if (!unit) return false;
-  return !COUNT_BASED_UNITS.includes(unit.toLowerCase());
+  const normalized = unit.toLowerCase();
+  
+  if (DECIMAL_UNITS.includes(normalized)) {
+    return true;
+  }
+  
+  return !WHOLE_NUMBER_UNITS.includes(normalized);
 }
 
 export function validateQuantityByUnit(value: number, unit: string | InventoryUnit, options?: { allowZero?: boolean }): { valid: boolean; error?: string } {

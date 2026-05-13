@@ -26,7 +26,13 @@ export const AddSale = () => {
     note: '',
     inventoryItemId: '',
     dueDate: '',
+    useAdvance: true,
   });
+
+  const selectedCustomerObj = formData.customerId ? customers.find(c => c.id === formData.customerId) : null;
+  const customerBalance = selectedCustomerObj ? selectedCustomerObj.totalPending : 0;
+  const advanceAvailablePaise = customerBalance < 0 ? Math.abs(customerBalance) : 0;
+  const advanceAvailable = advanceAvailablePaise / 100;
 
   const [errorText, setErrorText] = useState('');
 
@@ -37,6 +43,11 @@ export const AddSale = () => {
   
   const subtotal = sp * qty;
   const total = subtotal - discount;
+  
+  const advanceUsedPaise = formData.useAdvance && advanceAvailablePaise > 0 ? Math.min(advanceAvailablePaise, Math.round(total * 100)) : 0;
+  const advanceUsed = advanceUsedPaise / 100;
+  const remainingPayable = total - advanceUsed;
+
   const profit = (cp > 0) ? (total - (cp * qty)) : 0;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -103,26 +114,48 @@ export const AddSale = () => {
     const cpPaise = cp ? Math.round(cp * qty * 100) : 0;
     const profitPaise = cpPaise > 0 ? totalPaise - cpPaise : 0;
 
-    let linkedTxId: string | undefined = undefined;
+    const finalAdvanceUsedPaise = formData.useAdvance ? Math.min(advanceAvailablePaise, totalPaise) : 0;
+    const finalRemainingPayablePaise = totalPaise - finalAdvanceUsedPaise;
+
+    let linkedTxIds: string[] = [];
     const saleId = Math.random().toString(36).substring(2, 15);
 
-    if (formData.paymentMode === 'udhaar') {
-      linkedTxId = Math.random().toString(36).substring(2, 15);
-      
+    // 1. If advance used, create adjustment transaction
+    if (finalAdvanceUsedPaise > 0 && formData.customerId) {
+        const adjTxId = Math.random().toString(36).substring(2, 15);
+        addTransaction({
+          id: adjTxId,
+          userId: user?.id || 'unknown',
+          customerId: formData.customerId,
+          type: 'advance_adjustment',
+          amount: finalAdvanceUsedPaise,
+          description: `Advance adjusted against: ${formData.name}`,
+          linkedSaleId: saleId,
+        });
+        linkedTxIds.push(adjTxId);
+    }
+
+    // 2. If remaining amount is Udhaar, create udhaar transaction
+    let linkedUdhaarTxId: string | undefined = undefined;
+    if (formData.paymentMode === 'udhaar' && finalRemainingPayablePaise > 0 && formData.customerId) {
+      linkedUdhaarTxId = Math.random().toString(36).substring(2, 15);
       const noteStr = formData.note ? ` - ${formData.note}` : '';
       
       addTransaction({
-        id: linkedTxId,
+        id: linkedUdhaarTxId,
         userId: user?.id || 'unknown',
         customerId: formData.customerId,
         type: 'sale_credit',
-        amount: totalPaise,
-        description: `${qty}x ${formData.name}${noteStr}`,
+        amount: finalRemainingPayablePaise,
+        description: `${qty}x ${formData.name}${noteStr} (Partial Udhaar)`,
         linkedSaleId: saleId,
         paymentMode: 'udhaar',
         dueDate: formData.dueDate || undefined,
       });
+      linkedTxIds.push(linkedUdhaarTxId);
     }
+
+    const finalPaymentMode = (finalRemainingPayablePaise === 0 && finalAdvanceUsedPaise > 0) ? 'advance' : formData.paymentMode;
 
     addSale({
       id: saleId,
@@ -146,8 +179,9 @@ export const AddSale = () => {
       totalPaise,
       costTotalPaise: cpPaise || undefined,
       profitPaise: cpPaise > 0 ? profitPaise : undefined,
-      paymentMode: formData.paymentMode,
-      linkedTransactionId: linkedTxId,
+      paymentMode: finalPaymentMode as any,
+      advanceUsedPaise: finalAdvanceUsedPaise,
+      linkedTransactionId: linkedUdhaarTxId || (linkedTxIds.length > 0 ? linkedTxIds[0] : undefined),
       note: formData.note
     });
 
@@ -246,7 +280,9 @@ export const AddSale = () => {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-xs font-bold text-slate-700 mb-1.5 block uppercase tracking-wider">Selling Price (₹)</label>
+            <label className="text-xs font-bold text-slate-700 mb-1.5 block uppercase tracking-wider">
+               Selling Price {selectedItemInfo ? `(₹/${selectedItemInfo.unit})` : '(₹)'}
+            </label>
             <Input 
               required 
               type="number" 
@@ -278,17 +314,21 @@ export const AddSale = () => {
                  if (e.key === '-' || e.key === 'e' || e.key === 'E') {
                    e.preventDefault();
                  }
+                 if (!selectedItemInfo || !isDecimalAllowedForUnit(selectedItemInfo.unit)) {
+                   if (e.key === '.') {
+                     e.preventDefault();
+                   }
+                 }
               }}
               onChange={e => {
                   const val = e.target.value;
                   if (val.includes('-')) return;
-                  // Stop the user from typing more than available stock, optional but better UX. We rely on save block mostly.
                   setErrorText(''); setFormData(p => ({...p, quantity: val}))
               }}
             />
             {selectedItemInfo && (
               <p className="text-[10px] text-slate-500 font-semibold mt-1">
-                 {isDecimalAllowedForUnit(selectedItemInfo.unit) ? 'Decimal allowed' : 'Whole number only'}
+                 {isDecimalAllowedForUnit(selectedItemInfo.unit) ? 'Decimal allowed up to 3 places' : 'Whole number only'}
               </p>
             )}
           </div>
@@ -310,7 +350,9 @@ export const AddSale = () => {
             />
           </div>
           <div>
-            <label className="text-xs font-bold text-slate-700 mb-1.5 block uppercase tracking-wider">Cost Price (₹/item)</label>
+            <label className="text-xs font-bold text-slate-700 mb-1.5 block uppercase tracking-wider">
+              Cost Price {selectedItemInfo ? `(₹/${selectedItemInfo.unit})` : '(₹/item)'}
+            </label>
             <Input 
               type="number" 
               inputMode="decimal"
@@ -344,6 +386,33 @@ export const AddSale = () => {
             ))}
           </div>
         </div>
+
+        {advanceAvailable > 0 && (
+          <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 space-y-3">
+             <div className="flex justify-between items-center">
+                <div>
+                   <h4 className="text-[10px] font-bold text-indigo-900 uppercase tracking-wider">Customer Advance Available</h4>
+                   <p className="text-sm font-bold text-indigo-700">₹{advanceAvailable.toFixed(2)}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                   <span className="text-[10px] font-bold text-slate-500 uppercase">Use Advance?</span>
+                   <button 
+                     type="button"
+                     onClick={() => setFormData(p => ({ ...p, useAdvance: !p.useAdvance }))}
+                     className={`w-10 h-5 rounded-full transition-colors relative ${formData.useAdvance ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                   >
+                     <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-transform ${formData.useAdvance ? 'left-6' : 'left-1'}`}></div>
+                   </button>
+                </div>
+             </div>
+             {formData.useAdvance && (
+                <div className="pt-2 border-t border-indigo-100 flex justify-between items-center text-[10px] font-bold text-indigo-600 italic">
+                   <span>Iss sale mein ₹{advanceUsed.toFixed(2)} adjust hoga.</span>
+                   <span>Remaining: ₹{remainingPayable.toFixed(2)}</span>
+                </div>
+             )}
+          </div>
+        )}
 
         {formData.paymentMode === 'udhaar' && (
           <div className="bg-red-50 p-4 rounded-xl border border-red-100">
@@ -418,6 +487,19 @@ export const AddSale = () => {
              <span className="text-sm font-bold text-slate-900 uppercase tracking-widest">Net Total</span>
              <span className="text-xl font-bold text-slate-900">₹{total.toFixed(2)}</span>
           </div>
+
+          {advanceUsed > 0 && (
+            <div className="mt-2 pt-2 border-t border-dashed border-slate-200 space-y-1">
+               <div className="flex justify-between items-center text-[10px] font-bold text-indigo-600 uppercase tracking-widest">
+                  <span>Advance Used</span>
+                  <span>-₹{advanceUsed.toFixed(2)}</span>
+               </div>
+               <div className="flex justify-between items-center text-xs font-bold text-slate-900 uppercase tracking-widest">
+                  <span>Remaining Payable</span>
+                  <span>₹{remainingPayable.toFixed(2)}</span>
+               </div>
+            </div>
+          )}
           {cp > 0 && profit > 0 && (
              <div className="flex justify-between items-center mt-2 pt-2 border-t border-emerald-100">
                <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Est. Profit</span>
