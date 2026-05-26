@@ -31,7 +31,19 @@ export const AddTransaction = () => {
     addSale,
   } = useStore();
 
-  const initialType = searchParams.get("type") || "udhaar";
+  let initialType = searchParams.get("type");
+  if (!initialType) {
+    if (window.location.pathname.includes("payment")) {
+      initialType = "payment";
+    } else {
+      initialType = "udhaar";
+    }
+  }
+
+  // Safety guard: ensure the type is strictly either "udhaar" or "payment"
+  if (initialType !== "udhaar" && initialType !== "payment") {
+    initialType = "udhaar";
+  }
 
   const [formData, setFormData] = useState({
     amount: "",
@@ -66,36 +78,54 @@ export const AddTransaction = () => {
   const isInventoryMode = isUdhaar && udhaarMode === "inventory";
   const selectedItem = inventory.find((i) => i.id === selectedInventoryId);
 
-  const pendingUdhaars = transactions
-    .filter(
-      (t) =>
-        t.customerId === selectedCustomer &&
-        (t.type === "udhaar" || t.type === "sale_credit") &&
-        t.status !== "void",
-    )
-    .map((t) => {
-      const linkedPayments = transactions.filter(
-        (p) =>
-          p.type === "payment" &&
-          p.status !== "void" &&
-          p.linkedUdhaarTransactionId === t.id,
-      );
-      const totalLinkedPayment = linkedPayments.reduce(
-        (sum, p) => sum + p.amount,
-        0,
-      );
-      return { ...t, pendingAmount: t.amount - totalLinkedPayment };
-    })
-    .filter((t) => t.pendingAmount > 0)
-    .sort((a, b) => b.createdAt - a.createdAt);
+  const currentCustomerBalance = selectedCustomer
+    ? getCustomerBalance(selectedCustomer)
+    : 0;
+
+  const pendingUdhaars = currentCustomerBalance <= 0
+    ? []
+    : transactions
+        .filter(
+          (t) =>
+            t.customerId === selectedCustomer &&
+            (t.type === "udhaar" || t.type === "sale_credit") &&
+            t.status !== "void",
+        )
+        .map((t) => {
+          const linkedPayments = transactions.filter(
+            (p) =>
+              p.type === "payment" &&
+              p.status !== "void" &&
+              p.linkedUdhaarTransactionId === t.id,
+          );
+          const totalLinkedPayment = linkedPayments.reduce(
+            (sum, p) => sum + p.amount,
+            0,
+          );
+          return { ...t, pendingAmount: t.amount - totalLinkedPayment };
+        })
+        .filter((t) => t.pendingAmount > 0)
+        .sort((a, b) => b.createdAt - a.createdAt);
+
+  const sumIndividualRemaining = pendingUdhaars.reduce(
+    (sum, t) => sum + t.pendingAmount,
+    0,
+  );
+
+  const hasMismatch = !!selectedCustomer && currentCustomerBalance > 0 && Math.abs(sumIndividualRemaining - currentCustomerBalance) > 1;
 
   const selectedUdhaarEntry =
     selectedUdhaarId === "general"
       ? null
       : pendingUdhaars.find((t) => t.id === selectedUdhaarId);
-  const currentCustomerBalance = selectedCustomer
-    ? getCustomerBalance(selectedCustomer)
-    : 0;
+
+  useEffect(() => {
+    if (hasMismatch) {
+      setSelectedUdhaarId("general");
+    } else {
+      setSelectedUdhaarId("");
+    }
+  }, [selectedCustomer, hasMismatch]);
 
   const advanceAvailablePaise = currentCustomerBalance < 0 ? Math.abs(currentCustomerBalance) : 0;
   const advanceAvailable = advanceAvailablePaise / 100;
@@ -185,7 +215,7 @@ export const AddTransaction = () => {
     }
 
     if (!isUdhaar && paymentModeRef === "udhaar") {
-      if (!selectedUdhaarId || !selectedUdhaarEntry) {
+      if (!selectedUdhaarId || (selectedUdhaarId !== "general" && !selectedUdhaarEntry)) {
         setErrorText(
           "Please select an udhaar entry or switch to General Payment.",
         );
@@ -365,7 +395,15 @@ export const AddTransaction = () => {
           )}
 
           {/* Payment Reference Selection (if Payment) */}
-          {!isUdhaar && selectedCustomer && (
+          {!isUdhaar && selectedCustomer && currentCustomerBalance <= 0 && (
+            <div className="bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold p-3.5 rounded-xl flex flex-col gap-1 mt-4">
+              <span className="font-bold">Customer settled/advance mein hai.</span>
+              <span>Payment lene ki zarurat nahi.</span>
+            </div>
+          )}
+
+          {/* Payment Reference Selection (if Payment) */}
+          {!isUdhaar && selectedCustomer && currentCustomerBalance > 0 && (
             <div className="space-y-4 bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 mt-4">
               <label className="text-xs font-bold text-emerald-900 mb-1.5 block uppercase tracking-wider">
                 Payment kis udhaar ke against hai? (Optional)
@@ -401,7 +439,7 @@ export const AddTransaction = () => {
                     <option value="" disabled>
                       Select pending udhaar...
                     </option>
-                    {pendingUdhaars.map((tu) => (
+                    {!hasMismatch && pendingUdhaars.map((tu) => (
                       <option key={tu.id} value={tu.id}>
                         {tu.description || "Udhaar"} — ₹
                         {(tu.pendingAmount / 100).toFixed(2)} pending
@@ -413,13 +451,19 @@ export const AddTransaction = () => {
                         {(currentCustomerBalance / 100).toFixed(2)} pending
                       </option>
                     )}
-                    {pendingUdhaars.length === 0 &&
+                    {!hasMismatch && pendingUdhaars.length === 0 &&
                       currentCustomerBalance <= 0 && (
                         <option value="" disabled>
                           No pending udhaar found
                         </option>
                       )}
                   </select>
+                  {hasMismatch && (
+                    <div className="text-[10px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3.5 mt-3 font-semibold leading-relaxed flex flex-col gap-0.5 animate-fadeIn">
+                      <span className="font-bold text-amber-900">Exact entry-wise pending match nahi ho raha.</span>
+                      <span className="text-amber-700">Safe payment ke liye general balance use karein.</span>
+                    </div>
+                  )}
                   <p className="text-[10px] text-emerald-700 font-medium leading-relaxed mt-2">
                     Payment lene par stock change nahi hota. Ye sirf kis udhaar
                     ke against paisa aaya hai, woh track karne ke liye hai.
