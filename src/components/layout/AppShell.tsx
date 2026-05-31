@@ -2,6 +2,8 @@ import React from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Home, Plus, Users, Menu, Truck } from 'lucide-react';
 import { cn } from '../../utils';
+import { useStore } from '../../store/useStore';
+import { LockScreen } from './LockScreen';
 
 const BottomNav = () => {
   const location = useLocation();
@@ -62,8 +64,14 @@ const BottomNav = () => {
 
 export const AppShell = () => {
   const location = useLocation();
-  // Hide bottom nav on certain screens like onboarding
-  const hideBottomNav = location.pathname === '/' || location.pathname === '/onboarding';
+  const { user, pin, appLockEnabled } = useStore();
+  const [isUnlocked, setIsUnlocked] = React.useState(false);
+
+  // Show lock if user exists, appLock is enabled, pin is set, they are on a non-onboarding page, and not unlocked yet
+  const hideBottomNavInitial = location.pathname === '/' || location.pathname === '/onboarding';
+  const showLock = user && appLockEnabled && pin && !isUnlocked && !hideBottomNavInitial;
+
+  const hideBottomNav = hideBottomNavInitial || showLock;
 
   return (
     <div className="h-[100dvh] bg-slate-100 flex justify-center font-sans overflow-hidden">
@@ -85,7 +93,16 @@ export const AppShell = () => {
           "app-scroll no-visible-scrollbar w-full",
           hideBottomNav ? "flex-1 overflow-y-auto" : "app-main"
         )}>
-           <Outlet />
+          {showLock ? (
+            <LockScreen
+              ownerName={user?.name || ''}
+              shopName={user?.businessName || ''}
+              correctPin={pin || ''}
+              onUnlock={() => setIsUnlocked(true)}
+            />
+          ) : (
+            <Outlet />
+          )}
         </main>
         {!hideBottomNav && <BottomNav />}
       </div>

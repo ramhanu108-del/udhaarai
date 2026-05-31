@@ -192,7 +192,15 @@ export const CustomerDetail: React.FC = () => {
            className="w-full mt-2 bg-indigo-50 text-indigo-700 border border-indigo-100 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center active:scale-95 transition-transform"
         >
            <FileText className="w-4 h-4 mr-2" />
-           Statement Share Karo
+           Statement Share
+         </button>
+         <button 
+            type="button"
+            onClick={() => navigate(`/documents?customerId=${customer.id}`)}
+            className="w-full mt-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center active:scale-95 transition-transform"
+         >
+            <FileText className="w-4 h-4 mr-2 text-indigo-500 shrink-0" />
+            Documents
         </button>
       </div>
 
@@ -277,7 +285,23 @@ export const CustomerDetail: React.FC = () => {
                        </span>
                      </div>
                      
-                     {tx.status === 'active' && (
+                     {(() => {
+                        const isUdhaarDoc = tx.type === 'udhaar' || tx.type === 'sale_credit';
+                        const hasDoc = tx.documentGenerated || !!tx.documentType || !!tx.receiptNumber || !!tx.slipNumber;
+                        if (!hasDoc) return null;
+                        const docType = isUdhaarDoc ? 'udhaar_slip' : 'payment_receipt';
+                        const btnLabel = isUdhaarDoc ? 'View Udhaar Slip' : 'View Receipt';
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/documents/${docType}/${tx.id}`)}
+                            className="text-[9px] uppercase font-bold text-indigo-650 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 rounded-lg transition-all border border-indigo-100 active:scale-95 mr-1"
+                          >
+                            {btnLabel}
+                          </button>
+                        );
+                      })()}
+                      {tx.status === 'active' && (
                        <button 
                          onClick={() => setTransactionToVoid({ id: tx.id, isInventoryLinked: Boolean(tx.inventoryItemId && tx.type !== 'payment') })}
                          className="text-[9px] uppercase font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition-all border border-red-100 active:scale-95"

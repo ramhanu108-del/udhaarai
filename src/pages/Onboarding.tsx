@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Store, Scissors, Wrench, Shirt, BookOpen, Truck, MoreHorizontal, Package, Cloud, Check } from 'lucide-react';
+import { Store, Scissors, Wrench, Shirt, BookOpen, Truck, MoreHorizontal, Package, Cloud, Check, Lock } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -26,7 +26,7 @@ const languages: { id: Language; label: string }[] = [
 
 export const Onboarding = () => {
   const navigate = useNavigate();
-  const { setUser, user } = useStore();
+  const { setUser, user, setPin, setAppLockEnabled } = useStore();
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
@@ -34,6 +34,9 @@ export const Onboarding = () => {
     businessName: '',
     businessType: 'kirana' as BusinessType,
     language: 'hinglish' as Language,
+    pin: '',
+    confirmPin: '',
+    appLockEnabled: true,
   });
 
   // If already onboarded, redirect to dashboard.
@@ -53,9 +56,15 @@ export const Onboarding = () => {
   const handleComplete = () => {
     setUser({
       id: Math.random().toString(36).substring(2, 9),
-      ...formData,
+      name: formData.name,
+      phone: formData.phone,
+      businessName: formData.businessName,
+      businessType: formData.businessType,
+      language: formData.language,
       createdAt: Date.now(),
     });
+    setPin(formData.pin);
+    setAppLockEnabled(formData.appLockEnabled);
     navigate('/dashboard');
   };
 
@@ -163,10 +172,105 @@ export const Onboarding = () => {
             </div>
           </motion.div>
         );
-      case 3:
+      case 3: {
+        const pinValid = /^\d{4}$/.test(formData.pin);
+        const confirmValid = formData.pin === formData.confirmPin;
+        const canContinue = pinValid && confirmValid;
+
         return (
           <motion.div
-            key="step3"
+            key="step3_pin"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="flex flex-col h-full p-6 pt-12 animate-fadeIn"
+          >
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                <Lock className="w-5 h-5" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900">Set Security PIN</h2>
+            </div>
+            <p className="text-gray-500 text-xs mb-8">
+              SmartUdhaar app open karne par security ke liye 4-digit PIN enter karna hoga.
+            </p>
+
+            <div className="space-y-5 mb-auto">
+              <div>
+                <label className="text-xs font-bold text-gray-700 mb-1.5 block uppercase tracking-wider">
+                  Enter 4-Digit PIN *
+                </label>
+                <Input
+                  type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={4}
+                  placeholder="e.g. 1234"
+                  value={formData.pin}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, "");
+                    updateForm("pin", val);
+                  }}
+                  className="bg-slate-50 border-slate-200 text-center text-xl font-bold tracking-[1em] h-12"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-700 mb-1.5 block uppercase tracking-wider">
+                  Confirm PIN *
+                </label>
+                <Input
+                  type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={4}
+                  placeholder="e.g. 1234"
+                  value={formData.confirmPin}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, "");
+                    updateForm("confirmPin", val);
+                  }}
+                  className="bg-slate-50 border-slate-200 text-center text-xl font-bold tracking-[1em] h-12"
+                />
+              </div>
+
+              {formData.pin && formData.pin.length < 4 && (
+                <p className="text-xs text-amber-600 font-semibold">PIN exactly 4-digits ka hona chahiye.</p>
+              )}
+
+              {formData.pin.length === 4 && formData.confirmPin.length === 4 && !confirmValid && (
+                <p className="text-xs text-red-600 font-semibold">PIN match nahi kar raha. Kripya check karein.</p>
+              )}
+
+              <div className="flex items-center gap-3 bg-slate-50 p-4 border border-slate-100 rounded-xl mt-4">
+                <input
+                  type="checkbox"
+                  id="appLockEnabled"
+                  checked={formData.appLockEnabled}
+                  onChange={(e) => updateForm("appLockEnabled", e.target.checked)}
+                  className="w-4.5 h-4.5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer"
+                />
+                <label htmlFor="appLockEnabled" className="text-xs text-slate-750 font-semibold select-none cursor-pointer leading-snug">
+                  App open hote hi Lock Screen show karein (Recommended)
+                </label>
+              </div>
+            </div>
+
+            <div className="flex space-x-3 mt-6">
+              <Button variant="outline" className="w-16" onClick={handleBack}>
+                Back
+              </Button>
+              <Button className="flex-1" onClick={handleNext} disabled={!canContinue}>
+                Continue
+              </Button>
+            </div>
+          </motion.div>
+        );
+      }
+      case 4:
+        return (
+          <motion.div
+            key="step4"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
@@ -203,10 +307,10 @@ export const Onboarding = () => {
             </div>
           </motion.div>
         );
-      case 4:
+      case 5:
          return (
           <motion.div
-            key="step4"
+            key="step5"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}

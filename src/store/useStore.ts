@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { User, Customer, Transaction, Sale, Invoice, InventoryItem, StockMovement, StockMovementType, SyncStatus, SyncQueueItem, SyncOperation, Supplier, SupplierTransaction, SupplierTransactionType } from '../types';
+import { User, Subscription, Customer, Transaction, Sale, Invoice, InventoryItem, StockMovement, StockMovementType, SyncStatus, SyncQueueItem, SyncOperation, Supplier, SupplierTransaction, SupplierTransactionType } from '../types';
 import { sanitizeQuantityByUnit } from '../utils/quantity';
 
 export interface AppState {
   user: User | null;
+  subscription: Subscription;
   // Auth & Sync metadata
   authUser: { id: string, email: string } | null;
   syncStatus: SyncStatus;
@@ -22,15 +23,23 @@ export interface AppState {
   lastBackupAt?: number;
   lastRestoreAt?: number;
   lastExportAt?: number;
-  
-  monetization: {
-    adsEnabled: false,
-    aiProEnabled: false,
-    aiProPrice: 99
-  };
+  dismissedBackupReminderAt?: number;
+
+  pin?: string;
+  appLockEnabled?: boolean;
+  backupReminderFrequency?: 'daily' | 'weekly' | 'monthly' | 'disabled';
   
   // Actions
   setUser: (user: User) => void;
+  setSubscription: (subscription: Subscription) => void;
+  isPremium: () => boolean;
+  shouldShowAds: () => boolean;
+  canUseCloudSync: () => boolean;
+  canUseAIAssistant: () => boolean;
+  canUseAdvancedReports: () => boolean;
+  setPin: (pin: string | undefined) => void;
+  setAppLockEnabled: (enabled: boolean) => void;
+  setBackupReminderFrequency: (freq: 'daily' | 'weekly' | 'monthly' | 'disabled') => void;
   addCustomer: (customer: Omit<Customer, 'id' | 'createdAt' | 'totalPending'>) => void;
   updateCustomer: (id: string, updates: Partial<Customer>) => void;
   addTransaction: (transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt' | 'status'> & { id?: string }) => string;
@@ -68,7 +77,6 @@ export interface AppState {
   repairDuplicateData: () => { ok: boolean; message: string };
   hasDemoData: () => boolean;
   setDismissedBackupReminderAt: (time: number) => void;
-  dismissedBackupReminderAt?: number;
   
   // Auth & Sync Actions
   setAuthUser: (authUser: { id: string, email: string } | null) => void;
@@ -115,7 +123,11 @@ const dedupeById = <T extends { id?: string }>(arr: T[]): T[] => {
 export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
-      user: null,
+       user: null,
+      subscription: {
+        plan: 'free',
+        status: 'active',
+      },
       authUser: null,
       syncStatus: 'idle',
       syncQueue: [],
@@ -131,11 +143,9 @@ export const useStore = create<AppState>()(
       lastRestoreAt: undefined,
       lastExportAt: undefined,
       dismissedBackupReminderAt: undefined,
-      monetization: {
-        adsEnabled: false,
-        aiProEnabled: false,
-        aiProPrice: 99
-      },
+      pin: undefined,
+      appLockEnabled: false,
+      backupReminderFrequency: 'weekly',
 
       setAuthUser: (authUser) => set({ authUser }),
       setSyncStatus: (syncStatus, lastSyncedAt) => set((state) => ({ syncStatus, lastSyncedAt: lastSyncedAt ?? state.lastSyncedAt })),
@@ -148,6 +158,26 @@ export const useStore = create<AppState>()(
       clearQueue: () => set({ syncQueue: [] }),
 
       setUser: (user) => set({ user }),
+      setSubscription: (subscription) => set({ subscription }),
+      isPremium: () => {
+        const sub = get().subscription;
+        return !!(sub && sub.plan === 'premium' && sub.status === 'active');
+      },
+      shouldShowAds: () => {
+        return !get().isPremium();
+      },
+      canUseCloudSync: () => {
+        return get().isPremium();
+      },
+      canUseAIAssistant: () => {
+        return get().isPremium();
+      },
+      canUseAdvancedReports: () => {
+        return get().isPremium();
+      },
+      setPin: (pin) => set({ pin }),
+      setAppLockEnabled: (appLockEnabled) => set({ appLockEnabled }),
+      setBackupReminderFrequency: (backupReminderFrequency) => set({ backupReminderFrequency }),
 
       addCustomer: (customerData) => {
         const newCustomer: Customer = {

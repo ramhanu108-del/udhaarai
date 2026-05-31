@@ -16,6 +16,8 @@ import {
   sanitizeMoneyInput,
   handleMoneyKeyDown,
 } from "../utils/money";
+import { generateDocumentNumber } from "../utils/documentNo";
+import { format } from "date-fns";
 
 export const AddTransaction = () => {
   const navigate = useNavigate();
@@ -25,6 +27,7 @@ export const AddTransaction = () => {
     customers,
     inventory,
     transactions,
+    sales,
     addTransaction,
     adjustStock,
     user,
@@ -53,6 +56,10 @@ export const AddTransaction = () => {
     dueDate: "",
     useAdvance: true,
   });
+
+  const [generateDoc, setGenerateDoc] = useState(true);
+  const [savedTransactionId, setSavedTransactionId] = useState<string | null>(null);
+  const [savedDocType, setSavedDocType] = useState<'udhaar_slip' | 'payment_receipt' | null>(null);
 
   const [udhaarMode, setUdhaarMode] = useState<"manual" | "inventory">(
     "manual",
@@ -229,6 +236,10 @@ export const AddTransaction = () => {
     const finalAdvanceUsedPaise = (isUdhaar && formData.useAdvance) ? Math.min(advanceAvailablePaise, amountInPaise) : 0;
     const finalRemainingUdhaarPaise = amountInPaise - finalAdvanceUsedPaise;
 
+    const docType = isUdhaar ? 'udhaar_slip' : 'payment_receipt';
+    const slipNumber = (generateDoc && isUdhaar) ? generateDocumentNumber('udhaar_slip', sales, transactions) : undefined;
+    const receiptNumber = (generateDoc && !isUdhaar) ? generateDocumentNumber('payment_receipt', sales, transactions) : undefined;
+
     // For payment against udhaar, extract reference inventory id if it was an inventory udhaar
     const paymentLinkedInventoryId =
       !isUdhaar &&
@@ -318,10 +329,19 @@ export const AddTransaction = () => {
             : undefined,
         linkedSaleId: saleId,
         dueDate: isUdhaar && formData.dueDate ? formData.dueDate : undefined,
+        slipNumber,
+        receiptNumber,
+        documentGenerated: generateDoc,
+        documentType: docType,
       });
     }
 
-    navigate(-1);
+    if (generateDoc) {
+      setSavedTransactionId(mainTxId);
+      setSavedDocType(docType);
+    } else {
+      navigate(-1);
+    }
   };
 
   return (
@@ -698,6 +718,19 @@ export const AddTransaction = () => {
           )}
         </div>
 
+        <div className="flex items-center space-x-3 bg-indigo-50/55 p-3.5 rounded-2xl border border-indigo-100/50 mt-5 mb-1.5">
+          <input
+            id="doc-toggle"
+            type="checkbox"
+            checked={generateDoc}
+            onChange={(e) => setGenerateDoc(e.target.checked)}
+            className="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+          />
+          <label htmlFor="doc-toggle" className="text-xs font-extrabold text-indigo-900 cursor-pointer select-none uppercase tracking-wide">
+            {isUdhaar ? "Udhaar slip banana hai" : "Payment receipt banana hai"}
+          </label>
+        </div>
+
         <div className="mt-6 pb-8">
           <Button
             type="submit"
@@ -707,6 +740,106 @@ export const AddTransaction = () => {
           </Button>
         </div>
       </form>
+
+      {/* Transaction Save Success Modal Overlay */}
+      {savedTransactionId && savedDocType && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 flex items-center justify-center p-6 animate-fadeIn">
+          <div className="bg-white rounded-[32px] w-full max-w-sm p-6 shadow-2xl border border-slate-100 flex flex-col items-center text-center space-y-4">
+            <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl font-bold shadow-inner ${isUdhaar ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
+              ✓
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-slate-900">
+                {isUdhaar ? "Udhaar Added Saved!" : "Payment Received Saved!"}
+              </h3>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+                {isUdhaar ? "Udhaar slip generated" : "Payment receipt generated"}
+              </p>
+            </div>
+            
+            <div className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-xs font-bold text-slate-700 space-y-2">
+               <div className="flex justify-between">
+                 <span className="text-slate-400">Doc Number:</span>
+                 <span className="font-mono text-indigo-800">
+                   {isUdhaar 
+                     ? (transactions.find(t => t.id === savedTransactionId)?.slipNumber || 'N/A')
+                     : (transactions.find(t => t.id === savedTransactionId)?.receiptNumber || 'N/A')
+                   }
+                 </span>
+               </div>
+               <div className="flex justify-between">
+                 <span className="text-slate-400">Amount:</span>
+                 <span className="text-slate-900">Rs. {parsedAmount.toFixed(2)}</span>
+               </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2.5 w-full pt-1">
+              <button
+                type="button"
+                onClick={() => navigate(`/documents/${savedDocType}/${savedTransactionId}`)}
+                className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-[0.98]"
+              >
+                {isUdhaar ? "View Udhaar Slip" : "View Receipt"}
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  const customerName = selectedCustomer ? (customers.find(c => c.id === selectedCustomer)?.name || 'Customer') : 'Customer';
+                  const dateStr = format(new Date(), 'dd MMM yyyy');
+                  const currentBalance = selectedCustomer ? getCustomerBalance(selectedCustomer) : 0;
+                  
+                  let text = '';
+                  if (isUdhaar) {
+                    const slipNo = transactions.find(t => t.id === savedTransactionId)?.slipNumber || 'N/A';
+                    text = `*SmartUdhaar AI Udhaar Slip*\n`;
+                    text += `Shop Name: ${user?.businessName || 'Our Shop'}\n`;
+                    text += `Slip No: ${slipNo}\n`;
+                    text += `Customer: ${customerName}\n`;
+                    text += `Amount Added: Rs. ${parsedAmount.toFixed(2)}\n`;
+                    text += `Details: ${formData.description || 'Udhaar'}\n`;
+                    text += `Customer Total Pending: Rs. ${(currentBalance / 100).toFixed(2)}\n`;
+                    text += `Date: ${dateStr}`;
+                  } else {
+                    text = `SmartUdhaar AI Receipt\n`;
+                    text += `Customer: ${customerName}\n`;
+                    text += `Payment: Rs. ${parsedAmount.toFixed(2)}\n`;
+                    text += `Mode: ${formData.paymentMode.toUpperCase()}\n`;
+                    text += `Balance after payment: Rs. ${(currentBalance / 100).toFixed(2)}\n`;
+                    text += `Date: ${dateStr}`;
+                  }
+                  
+                  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+                }}
+                className="w-full h-12 bg-emerald-50 hover:bg-emerald-100 border border-emerald-150 text-emerald-800 font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all active:scale-[0.98]"
+              >
+                Share WhatsApp
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  navigate(`/documents/${savedDocType}/${savedTransactionId}`);
+                  setTimeout(() => {
+                    window.print();
+                  }, 500);
+                }}
+                className="w-full h-12 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all active:scale-[0.98]"
+              >
+                Download PDF
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => navigate('/dashboard')}
+              className="text-[10px] text-slate-400 font-black hover:text-slate-600 uppercase tracking-widest pt-2 transition-colors"
+            >
+              Go to Dashboard
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -29,6 +29,13 @@ export interface User {
   createdAt: number;
 }
 
+export interface Subscription {
+  plan: "free" | "premium";
+  status: "inactive" | "active";
+  source?: "manual_test" | "paid" | "trial";
+  expiresAt?: string;
+}
+
 export interface Customer {
   id: string;
   userId: string;
@@ -61,6 +68,10 @@ export interface Transaction {
   createdAt: number;
   updatedAt: number;
   isDemo?: boolean;
+  receiptNumber?: string;
+  slipNumber?: string;
+  documentGenerated?: boolean;
+  documentType?: "sale_invoice" | "udhaar_slip" | "payment_receipt";
 }
 
 export interface SaleItem {
@@ -93,6 +104,8 @@ export interface Sale {
   createdAt: number;
   updatedAt: number;
   isDemo?: boolean;
+  invoiceNumber?: string;
+  billGenerated?: boolean;
 }
 
 export interface InvoiceItem {

@@ -1,20 +1,40 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# SmartUdhaar AI — Android Mobile App
 
-# Run and deploy your AI Studio app
+SmartUdhaar AI is an offline-first premium ledger and shop management assistant. This repository is configured to automatically package and build the Android application via GitHub Actions of your repository.
 
-This contains everything you need to run your app locally.
+---
 
-View your app in AI Studio: https://ai.studio/apps/70d777b3-1baa-47b6-b149-d9b6fcf8695e
+## How to Download the APK
 
-## Run Locally
+You do **not** need Android Studio installed locally to obtain the test APK. Every time code is pushed to the `main` branch, or when triggered manually, GitHub Actions will compile a portable debug APK for you.
 
-**Prerequisites:**  Node.js
+Follow these simple steps:
+1. Go to your repository on **GitHub**.
+2. Click on the **Actions** tab at the top.
+3. Select **Android APK Build** from the left sidebar.
+4. Click on the **latest run** (indicated by green checkmark or currently running).
+5. Scroll down to the **Artifacts** section at the bottom.
+6. Click on **smartudhaar-ai-debug-apk** to download the ZIP file.
+7. Extract the ZIP to get your `app-debug.apk` file.
+8. Send this APK to any Android device, enable installation from *Unknown Sources*, and run!
 
+---
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Local Development Commands
+
+If you ever wish to build or test the Capacitor/Android project locally, you can use these custom NPM scripts:
+
+### 1. Synchronize Web Build with Android Platform
+This command builds the React/Vite assets and updates the native Android source directory:
+```bash
+npm run cap:sync
+```
+
+### 2. Compile Debug APK Locally
+This compiles the debug APK directly from the console (requires JDK 17 to be installed and available):
+```bash
+npm run android:debug
+```
+
+The compiled APK will be output to:
+`android/app/build/outputs/apk/debug/app-debug.apk`

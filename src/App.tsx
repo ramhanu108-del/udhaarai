@@ -32,8 +32,11 @@ import { Reports } from './pages/Reports';
 import { Privacy } from './pages/Privacy';
 import { Settings } from './pages/Settings';
 import { Upgrade } from './pages/Upgrade';
+import { Premium } from './pages/Premium';
 import { AddSupplier } from './pages/AddSupplier';
 import { SupplierDetail } from './pages/SupplierDetail';
+import { DocumentPreview } from './pages/DocumentPreview';
+import { Documents } from './pages/Documents';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -94,6 +97,9 @@ export default function App() {
             <Route path="/privacy" element={<ProtectedRoute><Privacy /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/upgrade" element={<ProtectedRoute><Upgrade /></ProtectedRoute>} />
+            <Route path="/premium" element={<ProtectedRoute><Premium /></ProtectedRoute>} />
+            <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
+            <Route path="/documents/:type/:id" element={<ProtectedRoute><DocumentPreview /></ProtectedRoute>} />
 
             {/* 404 Route */}
             <Route path="*" element={<NotFound />} />

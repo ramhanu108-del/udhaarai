@@ -6,11 +6,16 @@
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
     "build": "vite build",
+    "cap:sync": "npm run build && npx cap sync android",
+    "android:debug": "cd android && ./gradlew assembleDebug",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/cli": "^8.3.4",
+    "@capacitor/core": "^8.3.4",
     "@google/genai": "^1.29.0",
     "@radix-ui/react-slot": "^1.2.4",
     "@supabase/supabase-js": "^2.105.1",

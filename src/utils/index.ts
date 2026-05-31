@@ -75,3 +75,6 @@ export function generateInvoiceWhatsAppMessage(invoiceNumber: string, status: st
   return msg;
 }
 
+export const SHOW_PREMIUM_FEATURES = false;
+
+

@@ -9,10 +9,12 @@ import { Input } from '../components/ui/input';
 import { BottomActionBar } from '../components/layout/BottomActionBar';
 import { validateQuantityByUnit, isDecimalAllowedForUnit } from '../utils/quantity';
 import { validateMoneyAmount, sanitizeMoneyInput, handleMoneyKeyDown } from '../utils/money';
+import { generateDocumentNumber } from '../utils/documentNo';
+import { format } from 'date-fns';
 
 export const AddSale = () => {
   const navigate = useNavigate();
-  const { user, customers, addSale, addTransaction } = useStore();
+  const { user, customers, sales, transactions, addSale, addTransaction } = useStore();
   const inventoryItems = getInventoryItems();
 
   const [formData, setFormData] = useState({
@@ -28,6 +30,9 @@ export const AddSale = () => {
     dueDate: '',
     useAdvance: true,
   });
+
+  const [generateBill, setGenerateBill] = useState(true);
+  const [savedSaleId, setSavedSaleId] = useState<string | null>(null);
 
   const selectedCustomerObj = formData.customerId ? customers.find(c => c.id === formData.customerId) : null;
   const customerBalance = selectedCustomerObj ? selectedCustomerObj.totalPending : 0;
@@ -157,6 +162,8 @@ export const AddSale = () => {
 
     const finalPaymentMode = (finalRemainingPayablePaise === 0 && finalAdvanceUsedPaise > 0) ? 'advance' : formData.paymentMode;
 
+    const invoiceNo = generateBill ? generateDocumentNumber('sale_invoice', sales, transactions) : undefined;
+
     addSale({
       id: saleId,
       userId: user?.id || 'unknown',
@@ -182,10 +189,16 @@ export const AddSale = () => {
       paymentMode: finalPaymentMode as any,
       advanceUsedPaise: finalAdvanceUsedPaise,
       linkedTransactionId: linkedUdhaarTxId || (linkedTxIds.length > 0 ? linkedTxIds[0] : undefined),
-      note: formData.note
+      note: formData.note,
+      invoiceNumber: invoiceNo,
+      billGenerated: generateBill
     });
 
-    navigate('/dashboard'); // or redirect to /sales which we will build
+    if (generateBill) {
+      setSavedSaleId(saleId);
+    } else {
+      navigate('/dashboard');
+    }
   };
 
   const selectedItemInfo = formData.inventoryItemId 
@@ -509,6 +522,19 @@ export const AddSale = () => {
         </div>
         </div>
 
+        <div className="flex items-center space-x-3 bg-indigo-50/55 p-3.5 rounded-2xl border border-indigo-100/50 mt-5 mb-1.5">
+          <input
+            id="bill-toggle"
+            type="checkbox"
+            checked={generateBill}
+            onChange={(e) => setGenerateBill(e.target.checked)}
+            className="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300"
+          />
+          <label htmlFor="bill-toggle" className="text-xs font-extrabold text-indigo-900 cursor-pointer select-none uppercase tracking-wide">
+            Bill banana hai
+          </label>
+        </div>
+
         <div className="mt-6 pb-8">
           <Button 
             type="submit" 
@@ -518,6 +544,91 @@ export const AddSale = () => {
           </Button>
         </div>
       </form>
+
+      {/* Bill Save Success Modal Overlay */}
+      {savedSaleId && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 flex items-center justify-center p-6 animate-fadeIn">
+          <div className="bg-white rounded-[32px] w-full max-w-sm p-6 shadow-2xl border border-slate-100 flex flex-col items-center text-center space-y-4">
+            <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center text-2xl font-bold shadow-inner">
+              ✓
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-slate-900">Sale Transaction Saved!</h3>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Invoice generated successfully</p>
+            </div>
+            
+            <div className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 text-xs font-bold text-slate-700 space-y-2">
+               <div className="flex justify-between">
+                 <span className="text-slate-400">Bill Number:</span>
+                 <span className="font-mono text-indigo-800">{sales.find(s => s.id === savedSaleId)?.invoiceNumber || 'N/A'}</span>
+               </div>
+               <div className="flex justify-between">
+                 <span className="text-slate-400">Total Amount:</span>
+                 <span className="text-slate-900">Rs. {total.toFixed(2)}</span>
+               </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2.5 w-full pt-1">
+              <button
+                type="button"
+                onClick={() => navigate(`/documents/sale_invoice/${savedSaleId}`)}
+                className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-[0.98]"
+              >
+                View Bill
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  const saleObj = sales.find(s => s.id === savedSaleId);
+                  const dateStr = format(new Date(), 'dd MMM yyyy');
+                  const customerName = formData.customerId ? (customers.find(c => c.id === formData.customerId)?.name || 'Walk-in Customer') : 'Walk-in Customer';
+                  const remainingUdhaarVal = formData.paymentMode === 'udhaar' ? (total - advanceUsed) : 0;
+                  
+                  let text = `*SmartUdhaar AI Sale Bill*\n`;
+                  text += `Shop Name: ${user?.businessName || 'Our Shop'}\n`;
+                  text += `Bill No: ${saleObj?.invoiceNumber || 'N/A'}\n`;
+                  text += `Customer: ${customerName}\n`;
+                  text += `Item: ${formData.quantity}x ${formData.name} @ Rs. ${sp.toFixed(2)}\n`;
+                  if (discount > 0) text += `Discount: Rs. ${discount.toFixed(2)}\n`;
+                  text += `Total Amount: Rs. ${total.toFixed(2)}\n`;
+                  if (advanceUsed > 0) text += `Advance Used: Rs. ${advanceUsed.toFixed(2)}\n`;
+                  text += `Paid Amount: ${formData.paymentMode === 'udhaar' ? 'Rs. 0.00' : `Rs. ${remainingPayable.toFixed(2)}`}\n`;
+                  if (remainingUdhaarVal > 0) text += `Remaining Udhaar: Rs. ${remainingUdhaarVal.toFixed(2)}\n`;
+                  text += `Date: ${dateStr}`;
+                  
+                  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+                }}
+                className="w-full h-12 bg-emerald-50 hover:bg-emerald-100 border border-emerald-150 text-emerald-800 font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all active:scale-[0.98]"
+              >
+                Share WhatsApp
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  // Simply redirect to view page and trigger normal browser printing which is print-optimized!
+                  navigate(`/documents/sale_invoice/${savedSaleId}`);
+                  setTimeout(() => {
+                    window.print();
+                  }, 500);
+                }}
+                className="w-full h-12 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all active:scale-[0.98]"
+              >
+                Download PDF
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => navigate('/dashboard')}
+              className="text-[10px] text-slate-400 font-black hover:text-slate-600 uppercase tracking-widest pt-2 transition-colors"
+            >
+              Go to Dashboard
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

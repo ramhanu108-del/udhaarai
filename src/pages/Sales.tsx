@@ -429,6 +429,17 @@ export const Sales = () => {
                       >
                         {formatCurrency(sale.totalPaise)}
                       </p>
+                      {(sale.invoiceNumber || sale.billGenerated) && (
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/documents/sale_invoice/${sale.id}`)}
+                          className="mt-1.5 text-[10px] uppercase font-black text-center tracking-wider text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-150 rounded-lg px-2.5 py-1.5 transition-colors"
+                        >
+                          View Bill
+                        </button>
+                      )}
+                      <p className="hidden">
+                      </p>
                       <button
                         type="button"
                         onClick={(e) => {
@@ -504,6 +515,20 @@ export const Sales = () => {
                     >
                       <NotebookText className="w-5 h-5" />
                       Bill Banao
+                    </button>
+                  )}
+
+                  {selectedSale.status !== "void" && (selectedSale.invoiceNumber || selectedSale.billGenerated) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedSale(null);
+                        navigate(`/documents/sale_invoice/${selectedSale.id}`);
+                      }}
+                      className="w-full py-3.5 px-4 bg-emerald-650 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-emerald-700 active:bg-emerald-850 transition-colors"
+                    >
+                      <NotebookText className="w-5 h-5" />
+                      View Bill
                     </button>
                   )}
 

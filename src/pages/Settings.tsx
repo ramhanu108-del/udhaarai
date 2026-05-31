@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../store/useStore';
-import { ArrowLeft, User, Store, ShieldAlert, Download, Trash2, PowerOff } from 'lucide-react';
+import { ArrowLeft, User, Store, ShieldAlert, Download, Trash2, PowerOff, Lock, Key, Bell } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 
@@ -21,6 +21,59 @@ export const Settings = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [successText, setSuccessText] = useState('');
   const [showDemoClearConfirm, setShowDemoClearConfirm] = useState(false);
+
+  // App Lock & Security configuration state
+  const [currentPinInput, setCurrentPinInput] = useState('');
+  const [newPinInput, setNewPinInput] = useState('');
+  const [confirmNewPinInput, setConfirmNewPinInput] = useState('');
+  const [pinChangeError, setPinChangeError] = useState('');
+  const [pinChangeSuccess, setPinChangeSuccess] = useState('');
+  const [showPinChange, setShowPinChange] = useState(false);
+
+  const handleToggleAppLock = (checked: boolean) => {
+    if (checked && !state.pin) {
+      const defaultPin = prompt("App Lock ke liye ek 4-digit PIN set karein:");
+      if (defaultPin && /^\d{4}$/.test(defaultPin)) {
+        state.setPin(defaultPin);
+        state.setAppLockEnabled(true);
+        alert(`App Lock enable ho gaya! Aapka PIN hai: ${defaultPin}`);
+      } else {
+        alert("Invalid PIN. Only 4 digits allow/accept ho sakte hain.");
+      }
+    } else {
+      state.setAppLockEnabled(checked);
+    }
+  };
+
+  const handleChangePin = () => {
+    setPinChangeError('');
+    setPinChangeSuccess('');
+
+    if (state.pin && currentPinInput !== state.pin) {
+       setPinChangeError('Purana PIN galat hai.');
+       return;
+    }
+
+    if (!/^\d{4}$/.test(newPinInput)) {
+       setPinChangeError('Naya PIN exactly 4 numeric digits ka hona chahiye.');
+       return;
+    }
+
+    if (newPinInput !== confirmNewPinInput) {
+       setPinChangeError('Dono PIN matching nahi ho rahe.');
+       return;
+    }
+
+    state.setPin(newPinInput);
+    setPinChangeSuccess('Security PIN successfully change ho gaya!');
+    setCurrentPinInput('');
+    setNewPinInput('');
+    setConfirmNewPinInput('');
+    setTimeout(() => {
+      setShowPinChange(false);
+      setPinChangeSuccess('');
+    }, 2000);
+  };
 
   const handleSave = () => {
     if (state.user) {
@@ -145,6 +198,150 @@ export const Settings = () => {
                   Save Profile
                 </Button>
               </div>
+           </div>
+        </section>
+
+        <section>
+           <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3 px-1">Security & App Lock</h2>
+           <div className="bg-white rounded-2xl p-4 border border-slate-200 space-y-4 divide-y divide-slate-100">
+              
+              {/* App lock enable/disable */}
+              <div className="flex items-center justify-between pb-1">
+                 <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+                       <Lock className="w-4 h-4" />
+                    </div>
+                    <div>
+                       <p className="text-sm font-bold text-slate-900">App Lock Enabled</p>
+                       <p className="text-[10px] text-slate-500 font-medium">App restart par security PIN pucha jayega</p>
+                    </div>
+                 </div>
+                 <input 
+                   type="checkbox" 
+                   id="toggleAppLockSettings"
+                   className="w-5 h-5 accent-indigo-600 rounded cursor-pointer shrink-0"
+                   checked={state.appLockEnabled || false}
+                   onChange={(e) => handleToggleAppLock(e.target.checked)}
+                 />
+              </div>
+
+              {/* Change PIN button & collapsible panel */}
+              <div className="pt-3">
+                 <button 
+                   onClick={() => setShowPinChange(!showPinChange)}
+                   className="w-full flex items-center justify-between hover:bg-slate-50 p-1.5 rounded-lg transition-colors text-left"
+                 >
+                    <div className="flex items-center gap-3">
+                       <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+                          <Key className="w-4 h-4" />
+                       </div>
+                       <div>
+                          <p className="text-sm font-bold text-slate-900">Change Security PIN</p>
+                          <p className="text-[10px] text-slate-500 font-medium">4-digit protection password edit karein</p>
+                       </div>
+                    </div>
+                    <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest">
+                       {showPinChange ? 'Cancel' : 'Change'}
+                    </span>
+                 </button>
+
+                 {showPinChange && (
+                    <div className="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3.5">
+                       {/* Current PIN */}
+                       {state.pin && (
+                          <div>
+                             <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1 block">Current PIN *</label>
+                             <Input 
+                               type="password" 
+                               inputMode="numeric" 
+                               pattern="[0-9]*" 
+                               maxLength={4}
+                               value={currentPinInput} 
+                               onChange={e => setCurrentPinInput(e.target.value.replace(/\D/g, ''))} 
+                               className="bg-white border-slate-200 text-sm font-mono text-center tracking-widest h-10"
+                               placeholder="••••"
+                             />
+                          </div>
+                       )}
+
+                       {/* New PIN */}
+                       <div>
+                          <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1 block">New 4-Digit PIN *</label>
+                          <Input 
+                            type="password" 
+                            inputMode="numeric" 
+                            pattern="[0-9]*" 
+                            maxLength={4}
+                            value={newPinInput} 
+                            onChange={e => setNewPinInput(e.target.value.replace(/\D/g, ''))} 
+                            className="bg-white border-slate-200 text-sm font-mono text-center tracking-widest h-10"
+                            placeholder="••••"
+                          />
+                       </div>
+
+                       {/* Confirm New PIN */}
+                       <div>
+                          <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1 block">Confirm New PIN *</label>
+                          <Input 
+                            type="password" 
+                            inputMode="numeric" 
+                            pattern="[0-9]*" 
+                            maxLength={4}
+                            value={confirmNewPinInput} 
+                            onChange={e => setConfirmNewPinInput(e.target.value.replace(/\D/g, ''))} 
+                            className="bg-white border-slate-200 text-sm font-mono text-center tracking-widest h-10"
+                            placeholder="••••"
+                          />
+                       </div>
+
+                       {pinChangeError && (
+                          <p className="text-[11px] text-red-700 bg-red-50 border border-red-200 p-2.5 rounded-lg leading-snug">
+                             {pinChangeError}
+                          </p>
+                       )}
+
+                       {pinChangeSuccess && (
+                          <p className="text-[11px] text-emerald-750 font-bold bg-emerald-50 border border-emerald-150 p-2.5 rounded-lg leading-snug animate-pulse">
+                             {pinChangeSuccess}
+                          </p>
+                       )}
+
+                       <Button 
+                         onClick={handleChangePin}
+                         disabled={!newPinInput || !confirmNewPinInput || newPinInput.length !== 4 || confirmNewPinInput.length !== 4} 
+                         className="w-full h-10 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs uppercase tracking-widest"
+                       >
+                          Update Security PIN
+                       </Button>
+                    </div>
+                 )}
+              </div>
+
+              {/* Backup Reminder Frequency options */}
+              <div className="pt-3">
+                 <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                       <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+                          <Bell className="w-4 h-4" />
+                       </div>
+                       <div>
+                          <p className="text-sm font-bold text-slate-900">Backup Reminder Alert</p>
+                          <p className="text-[10px] text-slate-500 font-medium">Remind to download local backup</p>
+                       </div>
+                    </div>
+                    <select
+                      className="h-9 px-2.5 border border-slate-200 rounded-lg text-xs font-bold bg-slate-50 text-slate-800 focus:outline-none"
+                      value={state.backupReminderFrequency || 'weekly'}
+                      onChange={(e) => state.setBackupReminderFrequency(e.target.value as any)}
+                    >
+                      <option value="daily">Roz (Daily)</option>
+                      <option value="weekly">Weekly (Recommended)</option>
+                      <option value="monthly">Mahine me Ek Bar</option>
+                      <option value="disabled">Reminder Off</option>
+                    </select>
+                 </div>
+              </div>
+
            </div>
         </section>
 

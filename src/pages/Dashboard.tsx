@@ -25,6 +25,7 @@ import {
   HardDrive
 } from 'lucide-react';
 import { startOfDay, endOfDay } from 'date-fns';
+import { AdSlot } from '../components/AdSlot';
 
 export const Dashboard = () => {
   const navigate = useNavigate();
@@ -56,7 +57,25 @@ export const Dashboard = () => {
   const suggestions = getSmartSuggestions(useStore.getState());
   const mainSuggestion = suggestions[0];
 
-  const needsBackup = (!state.lastBackupAt || ((now.getTime() - state.lastBackupAt) > 7 * 24 * 60 * 60 * 1000)) && (!state.dismissedBackupReminderAt || ((now.getTime() - state.dismissedBackupReminderAt) > 24 * 60 * 60 * 1000));
+  // Dynamically calculate backup overdue threshold based on user frequency setting
+  const backupFreq = state.backupReminderFrequency || 'weekly';
+  let isBackupOverdue = false;
+  
+  if (backupFreq !== 'disabled') {
+    let intervalMs = 7 * 24 * 60 * 60 * 1000; // default weekly
+    if (backupFreq === 'daily') {
+      intervalMs = 1 * 24 * 60 * 60 * 1000;
+    } else if (backupFreq === 'monthly') {
+      intervalMs = 30 * 24 * 60 * 60 * 1000;
+    }
+    const lastBackupTime = state.lastBackupAt || 0;
+    isBackupOverdue = (now.getTime() - lastBackupTime) > intervalMs;
+  }
+
+  const dismissedInterval = 24 * 60 * 60 * 1000; // 24-hour snooze gap
+  const dismissedRecently = state.dismissedBackupReminderAt && (now.getTime() - state.dismissedBackupReminderAt) < dismissedInterval;
+  
+  const needsBackup = isBackupOverdue && !dismissedRecently;
     
   return (
     <div className="w-full min-h-full pb-28 bg-slate-50 overflow-y-auto no-visible-scrollbar">
@@ -166,6 +185,11 @@ export const Dashboard = () => {
            <QuickAction icon={ArrowUpRight} label="Udhaar" path="/add-transaction/select?type=udhaar" color="bg-white" textColor="text-red-600" navigate={navigate} border />
            <QuickAction icon={Truck} label="Purchase" path="/suppliers" color="bg-white" textColor="text-amber-600" navigate={navigate} border />
         </div>
+      </div>
+
+      {/* Home Ads */}
+      <div className="px-4">
+        <AdSlot placement="home_bottom" />
       </div>
 
       {/* Need Attention Section */}

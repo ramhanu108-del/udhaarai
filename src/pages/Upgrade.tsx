@@ -5,7 +5,7 @@ import { ArrowLeft, Check, Sparkles, Zap, Shield, Crown } from 'lucide-react';
 
 export const Upgrade = () => {
   const navigate = useNavigate();
-  const { monetization } = useStore();
+  const state = useStore();
 
   /* 
    * Monetization Developer Notes:
@@ -89,7 +89,7 @@ export const Upgrade = () => {
                 AI Pro
                 <Sparkles className="w-4 h-4 text-amber-400" />
               </h2>
-              <p className="text-sm font-bold text-indigo-300">₹{monetization?.aiProPrice || 99} / month</p>
+              <p className="text-sm font-bold text-indigo-300">₹99 / month</p>
             </div>
           </div>
           
